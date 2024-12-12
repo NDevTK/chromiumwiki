@@ -23,3 +23,5 @@ look at the codebase files to get more information for a file not already seen.
 Look at all the wiki pages then tell me if there's any important chromium security area I'm missing that should have its own wiki page or there's a page that should not exist or be merged.
 
 "Select new never seen before files based of your understanding of the code and the importance of their functions" my favourite thing to ask.
+
+`git clone https://chromium.googlesource.com/chromium/src --depth 1`
