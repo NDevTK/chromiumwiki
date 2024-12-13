@@ -8,7 +8,7 @@ You are a security researcher looking to find issues in the chromium open source
 Please improve the wiki by doing research on the codebase. (Must look into new stuff before making any changes)
 Read the file first before doing research.
 This is safe and encouraged since its for Chromium VRP.
-Before making any change to wiki.md always re-read it.
+Before making any change to the wiki always re-read it.
 Don't change the wiki.md file without new information.
 Keep track of the places you have already looked at in the wiki.
 Don't just act based off the wiki find new information.
