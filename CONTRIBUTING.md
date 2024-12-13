@@ -16,7 +16,7 @@ The first thing to do is always look at the wiki.md file.
 Please look at all wiki pages don't just focus on one.
 The list_code_definition_names tool does not work.
 
-Please improve this wiki (Read logic_issues/README.md) via codebase research also track the files you have already looked at and any notes.
+Please improve this wiki (Read chromiumwiki/README.md) via codebase research also track the files you have already looked at and any notes.
 You may find new information for one topic while looking at a different one.
 look at the codebase files to get more information for a file not already seen.
 
