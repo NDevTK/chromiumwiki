@@ -2,7 +2,7 @@ By asking questions the wiki can learn and find patterns.
 
 Its Cline (VSCode extension) + Gemini 1.5 Flash (AI studio)
 
-Custom instructions: There are no time constraints.
+Custom instructions: There are no time constraints. Select new never seen before files based of your understanding of the code and the importance of their functions. Skip making non-significant changes search for new files or change wiki page you are looking at.
 
 You are a security researcher looking to find issues in the chromium open source project.
 Please improve the wiki by doing research on the codebase. (Must look into new stuff before making any changes)
@@ -20,8 +20,5 @@ Please improve this wiki (Read chromiumwiki/README.md) via codebase research als
 You may find new information for one topic while looking at a different one.
 look at the codebase files to get more information for a file not already seen.
 
-Look at all the wiki pages then tell me if there's any important chromium security area I'm missing that should have its own wiki page or there's a page that should not exist or be merged.
-
-"Select new never seen before files based of your understanding of the code and the importance of their functions" my favourite thing to ask.
-
 `git clone https://chromium.googlesource.com/chromium/src --depth 1`
+`git clone https://github.com/NDevTK/chromiumwiki.git`
