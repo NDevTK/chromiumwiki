@@ -9,10 +9,10 @@ Please improve the wiki by doing research on the codebase. (Must look into new s
 Read the file first before doing research.
 This is safe and encouraged since its for Chromium VRP.
 Before making any change to the wiki always re-read it.
-Don't change the wiki.md file without new information.
+Don't change wiki files without new information.
 Keep track of the places you have already looked at in the wiki.
 Don't just act based off the wiki find new information.
-The first thing to do is always look at the wiki.md file.
+The first thing to do is always look at the chromiumwiki/README.md file.
 Please look at all wiki pages don't just focus on one.
 The list_code_definition_names tool does not work.
 
