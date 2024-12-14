@@ -2,6 +2,25 @@ This directory contains wiki pages documenting potential logic flaws and issues 
 
 **Important Note:** Research findings should be added directly to the relevant wiki page, following the format below. Do not create separate files for research notes.
 
+**Format of Each Wiki Page:**
+
+Each wiki page follows a consistent format:
+
+1. **Component Focus:** The page clearly states the specific Chromium component(s) being analyzed (e.g., `content/browser/bluetooth/web_bluetooth_service_impl.cc`).
+
+2. **Potential Logic Flaws:** A list of potential logic flaws or vulnerabilities is provided, along with a brief description of each issue and its potential impact.
+
+3. **Further Analysis and Potential Issues:** This section provides a more detailed analysis of the identified issues, highlighting specific areas of concern within the codebase. Research notes, including files reviewed and key functions, are integrated here.  This section also includes a summary of relevant CVEs and their connection to the discussed functionalities.
+
+4. **Areas Requiring Further Investigation:** This section contains additional points for further investigation, identified during the analysis process.
+
+5. **Secure Contexts and [Component Name]:** This section explains the interaction between the component's functionalities and secure contexts, highlighting the importance of secure contexts in mitigating vulnerabilities.
+
+6. **Privacy Implications:** This section discusses the privacy implications of the component's functionalities.
+
+7. **Additional Notes:** This section contains any additional relevant information or findings.
+
+
 **Individual Wiki Pages:**
 
 * [bluetooth.md](bluetooth.md) - Potential logic flaws in Web Bluetooth service implementation.
@@ -24,19 +43,6 @@ This directory contains wiki pages documenting potential logic flaws and issues 
 * [ui.md](ui.md) - Potential logic flaws in UI management.
 * [video_capture.md](video_capture.md) - Potential logic flaws in video capture.
 * [worker_threads.md](worker_threads.md) - Potential logic flaws in worker thread management.
-
-
-**Format of Each Wiki Page:**
-
-Each wiki page follows a consistent format:
-
-1. **Component Focus:** The page clearly states the specific Chromium component being analyzed (e.g., `content/browser/bluetooth/web_bluetooth_service_impl.cc`).
-
-2. **Potential Logic Flaws:** A list of potential logic flaws or vulnerabilities is provided, along with a brief description of each issue and its potential impact.
-
-3. **Further Analysis and Potential Issues:** This section provides a more detailed analysis of the identified issues, highlighting specific areas of concern within the codebase. Research notes, including files reviewed and key functions, are integrated here.
-
-4. **Areas Requiring Further Investigation (Added):** This section contains additional points for further investigation, identified during the analysis process.
 
 **Tips for Finding Security Issues in the Chromium Codebase:**
 
@@ -75,6 +81,3 @@ Based on the analysis of the wiki pages and a comprehensive review of numerous f
 * **Storage Mechanisms:** The `content/browser/storage_partition_impl.cc` file highlights the complexities of managing various storage mechanisms within the browser. Pay close attention to functions related to data deletion, quota management, and access control to prevent vulnerabilities such as data corruption, unauthorized access, and denial-of-service attacks.
 
 * **Operating System Interaction:**  The browser's interaction with the operating system's APIs can introduce security vulnerabilities if not handled correctly.  Review functions that interact with OS-specific APIs, paying close attention to error handling, input validation, and resource management.  The numerous files within the `content/browser` directory that interact with OS APIs, as discovered in the previous `search_files` command, further emphasize the importance of secure OS interaction.  A deeper review of these files, focusing on window management, input handling, and accessibility, is recommended.  Also consider reviewing files related to sandboxing mechanisms within the `content/browser` directory.  Pay particular attention to cookie handling and persistent storage mechanisms.  Also review service worker handling and lifecycle management.
-
-
-These tips highlight common vulnerability patterns identified across multiple Chromium components. Remember to consider the specific context and functionality of each component during your security analysis. Low-level details for specific functions and vulnerabilities are documented in their respective wiki pages. The review of `content/browser/renderer_host/render_widget_host_impl.cc` highlighted the importance of robust input handling, error management, and resource cleanup in the browser's UI layer.
