@@ -58,9 +58,13 @@ Each wiki page follows a consistent format:
 * [Crash Reporting](crash.md) - Analysis of Chromium crash reports.
 * [Desk Management](desk_management.md) - Potential vulnerabilities in desk management.
 * [Device Signals](device_signals.md) - Potential vulnerabilities related to device signals.
+* [DevTools](devtools.md) - Security analysis of Chromium's Developer Tools (DevTools).
+* [DevTools UI Bindings](devtools_ui_bindings.md) - Security analysis of Chromium's DevTools UI bindings.
+* [Drag and Drop](drag_and_drop.md) - Security analysis of Chromium's drag-and-drop functionality.
 * [Event Dispatching](event_dispatching.md) - Potential logic flaws in event dispatching.
 * [Eye Dropper](eye_dropper.md) - Potential vulnerabilities in the eye dropper functionality.
 * [Feature Flags](flags.md) - Security analysis of Chromium's feature flags system.
+* [Frame or Worker Scheduler](frame_or_worker_scheduler.md) - Security analysis of Chromium's frame or worker scheduler in Blink.
 * [GPU](gpu.md) - Security analysis of the Chromium GPU component.
 * [Guest View Security](guest_view_security.md) - Potential vulnerabilities related to guest view security in Chromium.
 * [History](history.md) - Potential logic flaws in history management.
@@ -68,19 +72,24 @@ Each wiki page follows a consistent format:
 * [Host Resolution](host_resolution.md) - Potential vulnerabilities in host resolution.
 * [HTTP](http.md) - Security analysis of Chromium's HTTP implementation.
 * [IPC](ipc.md) - Potential vulnerabilities in Chromium inter-process communication (IPC).
+* [Input Event Router](input_event_router.md) - Security implications of Chromium's input event routing.
+* [InputMethodManagerWrapper](input_method_manager_wrapper.md) - Security analysis of Chromium's InputMethodManagerWrapper on Android.
 * [Keyboard Accelerators](keyboard_accelerators.md) - Potential logic flaws in keyboard accelerator management.
 * [Media](media.md) - Potential vulnerabilities in Chromium media handling.
 * [Media Router](media_router.md) - Security analysis of Chromium's media router component.
 * [Memory Management](memory_management.md) - Potential vulnerabilities in Chromium memory management across processes.
 * [Mojo](mojo.md) - Potential vulnerabilities in Mojo broker.
 * [Native Messaging](native_messaging.md) - Potential logic flaws in native messaging.
+* [Navigation Predictor](navigation_predictor.md) - Security analysis of Chromium's navigation predictor.
 * [Omnibox](omnibox.md) - Security analysis of the Chromium omnibox component.
 * [Other Security Headers](other_security_headers.md) - Analysis of other security headers in Chromium.
 * [Password Management](password_management.md) - Potential vulnerabilities in password management.
+* [Payments](payments.md) - Potential vulnerabilities in Chromium Payment Handling.
 * [Permissions Policy](permissions_policy.md) - Analysis of Chromium's Permissions Policy implementation.
 * [Plugin Security](plugin_security.md) - Potential vulnerabilities in Chromium plugin process security.
 * [Policy](policy.md) - Potential logic flaws in policy handling.
 * [Popup Blocker](popup_blocker.md) - Security analysis of Chromium's popup blocker functionality.
+* [Presentation Request Notification](presentation_request_notification.md) - Security analysis of Chromium's presentation request notification.
 * [Printing](printing.md) - Security analysis of the Chromium printing component.
 * [Process Isolation](process_isolation.md) - Potential vulnerabilities in Chromium process isolation mechanisms.
 * [Process Lifecycle](process_lifecycle.md) - Potential vulnerabilities in Chromium process lifecycle management.
@@ -88,20 +97,33 @@ Each wiki page follows a consistent format:
 * [QR Code Generator](qr_code_generator.md)
 * [QUIC](quic.md) - Security analysis of Chromium's QUIC implementation.
 * [README](README.md) - This file.
+* [Render Frame Host Impl](render_frame_host_impl.md) - Security analysis of Chromium's RenderFrameHostImpl.
+* [RenderWidgetHostViewAura](render_widget_host_view_aura.md) - Security analysis of the Aura implementation of the render widget host view.
+* [RenderWidgetHostViewAndroid](render_widget_host_view_android.md) - Security analysis of the Android implementation of the render widget host view.
+* [Resource Load Scheduler](resource_load_scheduler.md) - Security analysis of Chromium's resource load scheduler in Blink.
 * [Resource Management](resource_management.md) - Potential vulnerabilities in Chromium resource management across processes.
+* [Safe Browsing Service](safe_browsing_service.md) - Security analysis of Chromium's Safe Browsing service.
+* [Saved Tab Groups](saved_tab_groups.md) - Security analysis of Chromium's saved tab groups feature.
+* [Screenshot Bubble](screenshot_bubble.md) - Security analysis of Chromium's screenshot bubble.
 * [Screen Capture](screen_capture.md) - Security analysis of Chromium's screen capture functionality.
-* [Search Engines](search_engines.md)
+* [Select File Dialog Extension](select_file_dialog_extension.md) - Security analysis of Chromium's select file dialog extension.
 * [Service Workers](service_workers.md) - Potential vulnerabilities in Chromium service worker implementation.
 * [Service Worker Payments](service_worker_payments.md) - Security analysis of payment handling within service workers.
 * [Settings](settings.md) - Security analysis of the Chromium settings pages.
+* [Sharing Hub Bubble](sharing_hub_bubble.md) - Security analysis of Chromium's sharing hub bubble.
 * [Sharesheet](sharesheet.md) - Security analysis of Chromium's sharesheet functionality.
 * [Spellcheck](spellcheck.md) - Potential vulnerabilities in the Chromium spellchecking functionality.
 * [Storage](storage.md) - Potential logic flaws in storage management.
+* [Synthetic Gesture Target](synthetic_gesture_target.md) - Security analysis of Chromium's synthetic gesture target.
+* [Synthetic Smooth Scroll Gesture](synthetic_smooth_scroll_gesture.md) - Security analysis of Chromium's handling of synthetic smooth scroll gestures.
 * [Sync](sync.md) - Potential vulnerabilities in the Chromium synchronization system.
-* [Tabs](tabs.md) - Potential vulnerabilities in Chromium's core tab management logic and UI.
+* [Tab Sharing UI](tab_sharing_ui.md) - Security analysis of the Chromium tab sharing UI.
 * [Task Scheduling](task_scheduling.md) - Potential vulnerabilities in task scheduling.
 * [Translation UI](translation_ui.md) - Potential vulnerabilities in the Chromium translation UI.
 * [URL Utilities](url_utilities.md) - Security analysis of URL utility functions in Chromium.
+* [Web App Identity](web_app_identity.md) - Security analysis of Chromium's web app identity handling.
+* [Webauthn](webauthn.md) - Security analysis of Chromium's Web Authentication implementation.
+* [Webid](webid.md) - Security analysis of Chromium's WebID implementation.
 * [WebSockets](websockets.md) - Security analysis of Chromium's WebSockets implementation.
 * [WebRTC](webrtc.md) - Security analysis of the Chromium WebRTC component.
 * [Worker Threads](worker_threads.md) - Potential logic flaws in worker thread management.
@@ -130,5 +152,22 @@ Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prio
 
 * **Downloads (`downloads.md`):** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks.
 
+* **DevTools (`devtools.md`, `devtools_ui_bindings.md`):** The high rewards for `devtools_browsertest.cc` ($22,250) and `devtools_ui_bindings.cc` ($7,000) highlight the importance of secure DevTools implementation. Focus on unauthorized access, data leakage, command injection, and XSS vulnerabilities.
+
+* **Input Handling and Events:** Thoroughly analyze input handling functions, event dispatching mechanisms, and gesture processing for potential injection vulnerabilities, spoofing attacks, and race conditions. Pay close attention to how input events are routed, validated, and processed by different components, including the `InputEventRouter`, `RenderWidgetHostViewAndroid`, `RenderWidgetHostViewAura`, and `InputMethodManagerWrapper`. Consider edge cases and unexpected input sequences.
+
+* **UI and View Management:** Carefully review the implementation of UI elements, view hierarchies, and visual updates for potential spoofing or manipulation vulnerabilities. Focus on how UI components are rendered, updated, and interacted with. Analyze the handling of view properties, sizes, positions, and visibility. Pay attention to the `RenderWidgetHostViewAndroid`, `RenderWidgetHostViewAura`, and other view-related classes.
+
+* **Resource Loading and Scheduling:** Investigate the resource loading and scheduling mechanisms for potential vulnerabilities related to resource starvation, denial-of-service attacks, and race conditions. Analyze how resources are prioritized, queued, and fetched. Review the `ResourceLoadScheduler` and its interaction with other components. Consider the impact of different throttling policies and resource limits.
+
+* **Navigation and URL Handling:** Thoroughly analyze navigation handling, URL parsing, and redirect processing for potential vulnerabilities related to URL manipulation, cross-origin navigation, and history modification. Pay close attention to how URLs are validated, sanitized, and processed by different components, including the `NavigationPredictor`, `LocalFrameView`, and other navigation-related classes.
+
+* **Clipboard and Data Handling:** Carefully review clipboard interactions and data handling functions for potential data leakage, manipulation, or unauthorized access vulnerabilities. Analyze how clipboard data is read, written, and protected. Review input validation and sanitization in clipboard-related functions. Pay attention to the `Clipboard` API implementation and its interaction with other components.
+
+* **Password Management:** Review password management logic, including password generation, storage, and reuse detection, for potential vulnerabilities related to password leakage, weak password generation, or bypasses of security checks. Analyze the `PasswordManager`, `PasswordReuseController`, and other password-related components.
+
+* **Media Handling:** Investigate media handling components, such as the `VideoCaptureManager`, `AudioDebugRecordingsHandler`, `WebContentsVideoCaptureDevice`, and `MediaStreamDispatcherHost`, for potential vulnerabilities related to unauthorized access, data leakage, race conditions, and denial-of-service attacks. Analyze how media devices are accessed, how media streams are managed, and how captured data is handled.
+
+* **File System Access and Downloads:** Review file system access and download handling for potential vulnerabilities related to unauthorized file access, file type restriction bypasses, and malicious file execution. Analyze the `SelectFileDialogExtension`, `DownloadManager`, and other download-related components. Pay close attention to how file paths are handled, how file types are validated, and how downloads are initiated and managed.
 
 Remember to always re-read the wiki page before making any changes to ensure consistency and avoid redundancy. Thoroughly analyze the codebase and cross-reference your findings with the VRP data to identify potential vulnerabilities. Use a variety of testing methodologies, including fuzzing, static analysis, and dynamic analysis, to thoroughly assess the security of these components.
