@@ -1,4 +1,6 @@
-This directory contains wiki pages documenting potential logic flaws and issues found in various parts of the Chromium codebase. Each file focuses on a specific area or component. Research notes, including a list of files reviewed, are integrated directly into the "Further Analysis and Potential Issues" section of each wiki page.
+# Chromium Security Wiki
+
+This wiki contains analysis of Chromium components and potential security vulnerabilities.
 
 **Important Note:** Research findings should be added directly to the relevant wiki page, following the format below. Do not create separate files for research notes.  **Also, please keep the security research tips below very detailed; do not shorten them.**  **Additionally, please keep the wiki page list ordered by VRP risk (highest payout first).**
 
@@ -23,72 +25,89 @@ Each wiki page follows a consistent format:
 
 **Individual Wiki Pages (ordered by VRP risk):**
 
-* [tabs.md](tabs.md) - Potential vulnerabilities in Chromium's core tab management logic and UI.
-* [autofill.md](autofill.md) - Security analysis of the Chromium autofill component.
-* [payments.md](payments.md) - Potential vulnerabilities in Chromium Payment Handling.
-* [extensions_api.md](extensions_api.md) - Potential vulnerabilities in the Chromium Extensions API.
-* [extension_security.md](extension_security.md) - Security analysis of Chromium extensions.
-* [webrtc.md](webrtc.md) - Security analysis of the Chromium WebRTC component.
-* [downloads.md](downloads.md) - Security analysis of the Chromium downloads component.
-* [service_worker_payments.md](service_worker_payments.md) - Security analysis of payment handling within service workers.
-* [blink_layout.md](blink_layout.md) - Security analysis of Blink's layout engine.
-* [blink_frame.md](blink_frame.md) - Security analysis of Blink's frame handling.
-* [blink_core.md](blink_core.md) - Security analysis of core modules and functionalities within Blink.
-* [disk_cache.md](disk_cache.md) - Security analysis of Chromium's disk cache.
-* [quic.md](quic.md) - Security analysis of Chromium's QUIC implementation.
-* [websockets.md](websockets.md) - Security analysis of Chromium's WebSockets implementation.
-* [http.md](http.md) - Security analysis of Chromium's HTTP implementation.
-* [drag_and_drop.md](drag_and_drop.md) - Security analysis of Chromium's drag-and-drop functionality.
-* [screen_capture.md](screen_capture.md) - Security analysis of Chromium's screen capture functionality.
-* [sharesheet.md](sharesheet.md) - Security analysis of Chromium's sharesheet functionality.
-* [service_workers.md](service_workers.md) - Potential vulnerabilities in Chromium service worker implementation.
-* [account_management.md](account_management.md) - Security analysis of Chromium's account management functionality.
-* [autofill_ui.md](autofill_ui.md) - Security analysis of the Chromium autofill UI.
-* [bluetooth.md](bluetooth.md) - Potential logic flaws in Web Bluetooth service implementation.
-* [bookmarks.md](bookmarks.md) - Security analysis of the Chromium bookmarks component.
-* [commerce.md](commerce.md) - Potential vulnerabilities in the Chromium commerce features.
-* [component_updater.md](component_updater.md) - Security analysis of Chromium's component updater functionality.
-* [contextual_search.md](contextual_search.md) - Security analysis of Chromium's contextual search functionality.
-* [CONTRIBUTING.md](CONTRIBUTING.md) - Guidelines for contributing to the Chromium project.
-* [crash.md](crash.md) - Analysis of Chromium crash reports.
-* [desk_management.md](desk_management.md) - Potential vulnerabilities in desk management.
-* [device_signals.md](device_signals.md) - Potential vulnerabilities related to device signals.
-* [event_dispatching.md](event_dispatching.md) - Potential logic flaws in event dispatching.
-* [eye_dropper.md](eye_dropper.md) - Potential vulnerabilities in the eye dropper functionality.
-* [flags.md](flags.md) - Security analysis of Chromium's feature flags system.
-* [gpu.md](gpu.md) - Security analysis of the Chromium GPU component.
-* [guest_view_security.md](guest_view_security.md) - Potential vulnerabilities related to guest view security in Chromium.
-* [history.md](history.md) - Potential logic flaws in history management.
-* [history_clusters.md](history_clusters.md) - Potential vulnerabilities related to History Clustering in Chromium.
-* [host_resolution.md](host_resolution.md) - Potential vulnerabilities in host resolution.
-* [ipc.md](ipc.md) - Potential vulnerabilities in Chromium inter-process communication (IPC).
-* [keyboard_accelerators.md](keyboard_accelerators.md) - Potential logic flaws in keyboard accelerator management.
-* [media.md](media.md) - Potential vulnerabilities in Chromium media handling.
-* [media_router.md](media_router.md) - Security analysis of Chromium's media router component.
-* [memory_management.md](memory_management.md) - Potential vulnerabilities in Chromium memory management across processes.
-* [mojo.md](mojo.md) - Potential vulnerabilities in Mojo broker.
-* [native_messaging.md](native_messaging.md) - Potential logic flaws in native messaging.
-* [omnibox.md](omnibox.md) - Security analysis of the Chromium omnibox component.
-* [password_management.md](password_management.md) - Potential vulnerabilities in password management.
-* [plugin_security.md](plugin_security.md) - Potential vulnerabilities in Chromium plugin process security.
-* [policy.md](policy.md) - Potential logic flaws in policy handling.
-* [popup_blocker.md](popup_blocker.md) - Security analysis of Chromium's popup blocker functionality.
-* [printing.md](printing.md) - Security analysis of the Chromium printing component.
-* [process_isolation.md](process_isolation.md) - Potential vulnerabilities in Chromium process isolation mechanisms.
-* [process_lifecycle.md](process_lifecycle.md) - Potential vulnerabilities in Chromium process lifecycle management.
-* [README.md](README.md) - This file.
-* [resource_management.md](resource_management.md) - Potential vulnerabilities in Chromium resource management across processes.
-* [security_headers.md](security_headers.md) - Potential vulnerabilities related to security headers in Chromium.
-* [settings.md](settings.md) - Security analysis of the Chromium settings pages.
-* [spellcheck.md](spellcheck.md) - Potential vulnerabilities in the Chromium spellchecking functionality.
-* [storage.md](storage.md) - Potential logic flaws in storage management.
-* [sync.md](sync.md) - Potential vulnerabilities in the Chromium synchronization system.
-* [task_scheduling.md](task_scheduling.md) - Potential vulnerabilities in task scheduling.
-* [translation_ui.md](translation_ui.md) - Potential vulnerabilities in the Chromium translation UI.
-* [worker_threads.md](worker_threads.md) - Potential logic flaws in worker thread management.
+* [Tabs](tabs.md) - Potential vulnerabilities in Chromium's core tab management logic and UI.
+* [Autofill](autofill.md) - Security analysis of the Chromium autofill component.
+* [Payments](payments.md) - Potential vulnerabilities in Chromium Payment Handling.
+* [Extensions API](extensions_api.md) - Potential vulnerabilities in the Chromium Extensions API.
+* [Extension Security](extension_security.md) - Security analysis of Chromium extensions.
+* [WebRTC](webrtc.md) - Security analysis of the Chromium WebRTC component.
+* [Downloads](downloads.md) - Security analysis of the Chromium downloads component.
+* [Service Worker Payments](service_worker_payments.md) - Security analysis of payment handling within service workers.
+* [Blink Layout](blink_layout.md) - Security analysis of Blink's layout engine.
+* [Blink Frame](blink_frame.md) - Security analysis of Blink's frame handling.
+* [Blink Core](blink_core.md) - Security analysis of core modules and functionalities within Blink.
+* [Disk Cache](disk_cache.md) - Security analysis of Chromium's disk cache.
+* [QUIC](quic.md) - Security analysis of Chromium's QUIC implementation.
+* [WebSockets](websockets.md) - Security analysis of Chromium's WebSockets implementation.
+* [HTTP](http.md) - Security analysis of Chromium's HTTP implementation.
+* [Drag and Drop](drag_and_drop.md) - Security analysis of Chromium's drag-and-drop functionality.
+* [Screen Capture](screen_capture.md) - Security analysis of Chromium's screen capture functionality.
+* [Sharesheet](sharesheet.md) - Security analysis of Chromium's sharesheet functionality.
+* [Service Workers](service_workers.md) - Potential vulnerabilities in Chromium service worker implementation.
+* [Account Management](account_management.md) - Security analysis of Chromium's account management functionality.
+* [Autofill UI](autofill_ui.md) - Security analysis of the Chromium autofill UI.
+* [Bluetooth](bluetooth.md) - Potential logic flaws in Web Bluetooth service implementation.
+* [Bookmarks](bookmarks.md) - Security analysis of the Chromium bookmarks component.
+* [Commerce](commerce.md) - Potential vulnerabilities in the Chromium commerce features.
+* [Component Updater](component_updater.md) - Security analysis of Chromium's component updater functionality.
+* [Content Security Policy](content_security_policy.md) - Analysis of Chromium's Content Security Policy implementation.
+* [Contextual Search](contextual_search.md) - Security analysis of Chromium's contextual search functionality.
+* [CONTRIBUTING](CONTRIBUTING.md) - Guidelines for contributing to the Chromium project.
+* [COOP](cross_origin_opener_policy.md) - Analysis of Chromium's Cross-Origin Opener Policy implementation.
+* [CORP](cross_origin_resource_policy.md) - Analysis of Chromium's Cross-Origin Resource Policy implementation.
+* [Crash Reporting](crash.md) - Analysis of Chromium crash reports.
+* [Desk Management](desk_management.md) - Potential vulnerabilities in desk management.
+* [Device Signals](device_signals.md) - Potential vulnerabilities related to device signals.
+* [Event Dispatching](event_dispatching.md) - Potential logic flaws in event dispatching.
+* [Eye Dropper](eye_dropper.md) - Potential vulnerabilities in the eye dropper functionality.
+* [Feature Flags](flags.md) - Security analysis of Chromium's feature flags system.
+* [GPU](gpu.md) - Security analysis of the Chromium GPU component.
+* [Guest View Security](guest_view_security.md) - Potential vulnerabilities related to guest view security in Chromium.
+* [History](history.md) - Potential logic flaws in history management.
+* [History Clusters](history_clusters.md) - Potential vulnerabilities related to History Clustering in Chromium.
+* [Host Resolution](host_resolution.md) - Potential vulnerabilities in host resolution.
+* [HTTP](http.md) - Security analysis of Chromium's HTTP implementation.
+* [IPC](ipc.md) - Potential vulnerabilities in Chromium inter-process communication (IPC).
+* [Keyboard Accelerators](keyboard_accelerators.md) - Potential logic flaws in keyboard accelerator management.
+* [Media](media.md) - Potential vulnerabilities in Chromium media handling.
+* [Media Router](media_router.md) - Security analysis of Chromium's media router component.
+* [Memory Management](memory_management.md) - Potential vulnerabilities in Chromium memory management across processes.
+* [Mojo](mojo.md) - Potential vulnerabilities in Mojo broker.
+* [Native Messaging](native_messaging.md) - Potential logic flaws in native messaging.
+* [Omnibox](omnibox.md) - Security analysis of the Chromium omnibox component.
+* [Other Security Headers](other_security_headers.md) - Analysis of other security headers in Chromium.
+* [Password Management](password_management.md) - Potential vulnerabilities in password management.
+* [Permissions Policy](permissions_policy.md) - Analysis of Chromium's Permissions Policy implementation.
+* [Plugin Security](plugin_security.md) - Potential vulnerabilities in Chromium plugin process security.
+* [Policy](policy.md) - Potential logic flaws in policy handling.
+* [Popup Blocker](popup_blocker.md) - Security analysis of Chromium's popup blocker functionality.
+* [Printing](printing.md) - Security analysis of the Chromium printing component.
+* [Process Isolation](process_isolation.md) - Potential vulnerabilities in Chromium process isolation mechanisms.
+* [Process Lifecycle](process_lifecycle.md) - Potential vulnerabilities in Chromium process lifecycle management.
+* [Profile Management](profile_management.md) - Potential vulnerabilities related to profile management.
+* [QR Code Generator](qr_code_generator.md)
+* [QUIC](quic.md) - Security analysis of Chromium's QUIC implementation.
+* [README](README.md) - This file.
+* [Resource Management](resource_management.md) - Potential vulnerabilities in Chromium resource management across processes.
+* [Screen Capture](screen_capture.md) - Security analysis of Chromium's screen capture functionality.
+* [Search Engines](search_engines.md)
+* [Service Workers](service_workers.md) - Potential vulnerabilities in Chromium service worker implementation.
+* [Service Worker Payments](service_worker_payments.md) - Security analysis of payment handling within service workers.
+* [Settings](settings.md) - Security analysis of the Chromium settings pages.
+* [Sharesheet](sharesheet.md) - Security analysis of Chromium's sharesheet functionality.
+* [Spellcheck](spellcheck.md) - Potential vulnerabilities in the Chromium spellchecking functionality.
+* [Storage](storage.md) - Potential logic flaws in storage management.
+* [Sync](sync.md) - Potential vulnerabilities in the Chromium synchronization system.
+* [Tabs](tabs.md) - Potential vulnerabilities in Chromium's core tab management logic and UI.
+* [Task Scheduling](task_scheduling.md) - Potential vulnerabilities in task scheduling.
+* [Translation UI](translation_ui.md) - Potential vulnerabilities in the Chromium translation UI.
+* [URL Utilities](url_utilities.md) - Security analysis of URL utility functions in Chromium.
+* [WebSockets](websockets.md) - Security analysis of Chromium's WebSockets implementation.
+* [WebRTC](webrtc.md) - Security analysis of the Chromium WebRTC component.
+* [Worker Threads](worker_threads.md) - Potential logic flaws in worker thread management.
 
 
-**Note:** The original `network.md` and `rendering_engine.md` files have been deleted, as their content has been split into more specific wikis.  The `service_workers.md` file has been updated to remove payment-related content, which is now in `service_worker_payments.md`.
+**Note:** The original `network.md` and `rendering_engine.md` files have been deleted, as their content has been split into more specific wikis.  The `service_workers.md` file has been updated to remove payment-related content, which is now in `service_worker_payments.md`.  The `security_headers.md` file has been split into more specific wiki pages for each security header.
 
 
 **Tips for Security Researchers:**
@@ -105,9 +124,9 @@ Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prio
 
 * **WebRTC (`webrtc.md`):** The significant reward for `audio_debug_recordings_handler.cc` ($30,000) points to vulnerabilities in media handling.  Focus on data stream integrity, media sanitization, and real-time communication security.
 
-* **Renderer and Blink (now split into `blink_layout.md`, `blink_frame.md`, and `blink_core.md`):** The large number of rewarded files in the renderer and Blink components suggests a wide range of potential vulnerabilities.  Focus on JavaScript execution, DOM manipulation, and cross-origin resource loading.
+* **Blink (`blink_layout.md`, `blink_frame.md`, `blink_core.md`):** The large number of rewarded files in the Blink components suggests a wide range of potential vulnerabilities.  Focus on JavaScript execution, DOM manipulation, and cross-origin resource loading.
 
-* **Network (now split into `disk_cache.md`, `quic.md`, `websockets.md`, and `http.md`):**  The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling.  Focus on protocol handling, cookie handling, and caching mechanisms.
+* **Network (`disk_cache.md`, `quic.md`, `websockets.md`, `http.md`):**  The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling.  Focus on protocol handling, cookie handling, and caching mechanisms.
 
 * **Downloads (`downloads.md`):** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks.
 

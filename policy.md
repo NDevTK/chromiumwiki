@@ -1,100 +1,99 @@
 # Policy Logic Issues
 
-## chrome/browser/enterprise/browser_management/browser_management_status_provider.cc and chrome/browser/policy/profile_policy_connector.cc and components/policy/core/common/policy_map.cc and components/policy/core/common/policy_service.cc and components/policy/core/common/policy_service_impl.cc and components/policy/core/common/policy_loader_win.cc and components/policy/core/common/policy_loader_mac.mm and components/policy/core/common/schema_registry.cc and components/policy/core/common/cloud/cloud_policy_manager.cc and components/policy/core/common/policy_utils.cc and components/policy/core/common/policy_proto_decoders.cc and components/policy/core/common/proxy_policy_provider.cc and components/policy/core/browser/browser_policy_connector.cc and components/policy/content/policy_blocklist_navigation_throttle.cc
+## Components and Files:
 
-This file handles browser management status reporting, crucial in enterprise environments. The code fetches the enterprise management authority (cloud, domain, local) based on OS and policy settings.  The `FetchAuthority()` function in various provider classes (e.g., `BrowserCloudManagementStatusProvider`, `LocalBrowserManagementStatusProvider`, `ProfileCloudManagementStatusProvider`, `LocalTestPolicyUserManagementProvider`, `LocalTestPolicyBrowserManagementProvider`, `DeviceManagementStatusProvider`) determines the management authority.  These functions rely on checks for the existence of policy managers and policy settings.  A detailed analysis of the policy parsing and validation mechanisms within each `FetchAuthority()` function is needed.  Specific attention should be paid to how these functions handle different policy sources (cloud, local, domain).
+* `chrome/browser/enterprise/browser_management/browser_management_status_provider.cc`
+* `chrome/browser/policy/profile_policy_connector.cc`
+* `components/policy/core/common/policy_map.cc`
+* `components/policy/core/common/policy_service.cc`
+* `components/policy/core/common/policy_service_impl.cc`
+* `components/policy/core/common/policy_loader_win.cc`
+* `components/policy/core/common/policy_loader_mac.mm`
+* `components/policy/core/common/schema_registry.cc`
+* `components/policy/core/common/cloud/cloud_policy_manager.cc`
+* `components/policy/core/common/policy_utils.cc`
+* `components/policy/core/common/policy_proto_decoders.cc`
+* `components/policy/core/common/proxy_policy_provider.cc`
+* `components/policy/core/browser/browser_policy_connector.cc`
+* `components/policy/content/policy_blocklist_navigation_throttle.cc`
 
-* **BrowserCloudManagementStatusProvider::FetchAuthority():** This function checks for the existence of `g_browser_process->browser_policy_connector()->machine_level_user_cloud_policy_manager()`.  A missing or improperly configured policy manager could lead to incorrect authority determination.  An attacker might be able to manipulate the creation or configuration of this manager to bypass intended restrictions.  For example, an attacker could potentially exploit a race condition during the initialization of this manager, leading to an incorrect authority determination. On ChromeOS, this function always returns `EnterpriseManagementAuthority::NONE`.  The code directly checks for the presence of the `machine_level_user_cloud_policy_manager`.  A race condition could occur if this manager is not fully initialized before this check.  The function's reliance on the `browser_policy_connector` makes it a critical point for analysis. Specifically, the initialization of `machine_level_user_cloud_policy_manager` should be carefully examined for potential race conditions that could lead to an attacker manipulating the browser's management status.  Consider adding logging to track the initialization status of the policy manager.  The direct access to `machine_level_user_cloud_policy_manager` without additional checks creates a potential vulnerability.  The initialization process of this manager should be reviewed for race conditions.  Implement robust error handling and input validation to prevent vulnerabilities.
+This document analyzes Chromium's policy handling, focusing on the `PolicyMap` class in `components/policy/core/common/policy_map.cc`.
 
-* **LocalBrowserManagementStatusProvider::FetchAuthority():** This function uses `g_browser_process->browser_policy_connector()->HasMachineLevelPolicies()`.  A flaw in the `HasMachineLevelPolicies()` function could lead to incorrect authority determination.  An attacker might be able to manipulate the underlying policy data to bypass intended restrictions.  A detailed analysis of the implementation of `HasMachineLevelPolicies()` is needed to identify potential vulnerabilities. On ChromeOS, this function always returns `EnterpriseManagementAuthority::NONE`. The function directly calls `HasMachineLevelPolicies()`, which needs further investigation to understand its internal workings and potential vulnerabilities.  The function's direct dependence on the `browser_policy_connector` highlights its importance in security analysis. The `HasMachineLevelPolicies()` function should be carefully reviewed for potential vulnerabilities that could allow an attacker to manipulate the policy data and bypass intended restrictions.  Consider adding input validation to the `HasMachineLevelPolicies()` function to prevent malicious policy data from being processed.  Implement robust error handling and input validation to prevent vulnerabilities.
+## Potential Logic Flaws:
 
-* **LocalDomainBrowserManagementStatusProvider::FetchAuthority():** This function combines checks for `g_browser_process->browser_policy_connector()->HasMachineLevelPolicies()` and, on Windows, `policy::DomainEnrollmentStatusProvider::IsEnrolledToDomain()`.  An attacker could potentially manipulate either check to achieve an incorrect authority determination.  An attacker could potentially craft a malicious policy that bypasses the `HasMachineLevelPolicies()` check, or they could exploit a vulnerability in `IsEnrolledToDomain()` to spoof the domain enrollment status. On ChromeOS, this function only checks `HasMachineLevelPolicies()`. The function combines checks for local policies and, on Windows, domain enrollment status.  Both checks need to be analyzed for potential vulnerabilities. The use of both `HasMachineLevelPolicies()` and `IsEnrolledToDomain()` creates multiple potential attack surfaces. The `HasMachineLevelPolicies()` function and the `IsEnrolledToDomain()` function should be carefully reviewed for potential vulnerabilities that could allow an attacker to manipulate the policy data or spoof the domain enrollment status.  Implement robust error handling to prevent unexpected behavior or crashes.  The combination of checks in this function creates multiple points of potential failure or manipulation.  Implement robust error handling and input validation to prevent vulnerabilities.
-
-* **ProfileCloudManagementStatusProvider::FetchAuthority():** This function uses `IsProfileManaged(profile_)`, which in turn relies on the `ProfilePolicyConnector`.  An attacker might be able to manipulate the `ProfilePolicyConnector` to spoof the management status of a profile.  This could involve manipulating the underlying policy data or exploiting flaws in the communication channels between the provider and the `ProfilePolicyConnector`.  The function also checks if the primary user on ChromeOS is managed. The function uses `IsProfileManaged()` to check if a profile is managed.  This function's implementation needs to be reviewed for potential vulnerabilities. The function's reliance on the `ProfilePolicyConnector` makes it a potential target for attacks. The `ProfilePolicyConnector` should be carefully reviewed for potential vulnerabilities that could allow an attacker to manipulate the profile management status.  Consider adding logging to track profile management status changes.  The function's reliance on `IsProfileManaged()` without additional validation creates a potential vulnerability.  Implement robust error handling and input validation to prevent vulnerabilities.
-
-* **LocalTestPolicyUserManagementProvider::FetchAuthority():** This function checks for the use of a local test policy provider and examines policies within the policy service.  An attacker might be able to manipulate the test policy provider or the policy service to bypass intended restrictions.  This could involve injecting malicious policies into the policy service or exploiting flaws in the access control mechanisms of the test policy provider.  It iterates through user policies and checks for cloud sources. The function iterates through user policies to check for cloud sources.  The policy service's access control mechanisms need to be reviewed.  The function's interaction with the policy service is a critical aspect for security analysis. The policy service's access control mechanisms should be carefully reviewed for potential vulnerabilities that could allow an attacker to inject malicious policies or manipulate the policy service.  Implement robust input validation to prevent malicious policies from being processed.  The use of a local test policy provider introduces a potential attack surface.  Implement robust error handling and input validation to prevent vulnerabilities.
-
-* **LocalTestPolicyBrowserManagementProvider::FetchAuthority():** This function also checks for the use of a local test policy provider and examines policies within the policy service.  Similar to the user management provider, an attacker might be able to manipulate the test policy provider or the policy service to bypass intended restrictions.  An attacker could potentially exploit vulnerabilities in the policy service's data validation or access control mechanisms. It iterates through machine policies and checks for cloud and platform sources.  Similar to the user management provider, the policy service's access control and data validation mechanisms need to be reviewed.  The function's reliance on the policy service makes it vulnerable to attacks targeting the service's integrity. The policy service's data validation and access control mechanisms should be carefully reviewed for potential vulnerabilities that could allow an attacker to manipulate the policy service.  Implement robust error handling to prevent unexpected behavior or crashes.  The use of a local test policy provider introduces a potential attack surface.  Implement robust error handling and input validation to prevent vulnerabilities.
-
-* **DeviceManagementStatusProvider::FetchAuthority() (ChromeOS only):** This function checks `g_browser_process->platform_part()->browser_policy_connector_ash()->IsDeviceEnterpriseManaged()`.  A flaw in this check could lead to incorrect authority determination.  An attacker might be able to manipulate the underlying device management status to bypass intended restrictions.  This could involve exploiting vulnerabilities in the communication channels between the browser and the device management system. The function directly calls `IsDeviceEnterpriseManaged()`, which needs further investigation to understand its internal workings and potential vulnerabilities.  The function's direct interaction with the ChromeOS-specific `browser_policy_connector_ash` makes it a unique target for analysis. The `IsDeviceEnterpriseManaged()` function should be carefully reviewed for potential vulnerabilities that could allow an attacker to manipulate the device management status.  Consider adding additional validation to ensure the accuracy of the device management status.  The direct reliance on `IsDeviceEnterpriseManaged()` without additional validation is a potential vulnerability.  The `FetchAuthority` function's direct call to `IsDeviceEnterpriseManaged()` needs a thorough security review.  The function's reliance on the ChromeOS-specific `browser_policy_connector_ash` is a critical aspect for security analysis.  Implement robust error handling and input validation to prevent vulnerabilities.
-
-
-**Further Analysis and Potential Issues (Updated):**
-
-* **Race Conditions:** The asynchronous nature of policy fetching and the reliance on multiple components (e.g., `browser_policy_connector`, policy service) introduce the risk of race conditions.  These could lead to inconsistencies in the reported management status.  Implement appropriate synchronization mechanisms to ensure that policy data is accessed and processed consistently.  The asynchronous nature of policy fetching increases the risk of race conditions.  Each `FetchAuthority` function should be reviewed for potential race conditions.  The `Init` function in `profile_policy_connector.cc` should be reviewed for potential race conditions, especially in the ChromeOS-specific parts.  The interaction between `profile_policy_connector.cc` and the policy service should be carefully reviewed for potential race conditions.  Implement appropriate locking mechanisms to protect shared resources and prevent race conditions.  The asynchronous nature of policy fetching and the interaction between multiple components increase the risk of race conditions.  Implement appropriate synchronization mechanisms to prevent inconsistencies in the reported management status.  The analysis of the `BrowserPolicyConnector` class reveals potential vulnerabilities related to race conditions in policy fetching and initialization.  The `InitInternal` function should be carefully reviewed for potential race conditions.  Appropriate synchronization mechanisms should be implemented to ensure that policy data is accessed and processed consistently.
-
-* **Policy Enforcement Bypass:**  The parsing and interpretation of policy data should be carefully reviewed to prevent attackers from crafting malformed policy configurations that bypass intended restrictions.  Implement robust policy validation to prevent such bypasses.  Robust policy validation is crucial to prevent attackers from crafting malformed policies that bypass intended restrictions.  Input validation should be added to all functions handling policy data.  The policy parsing and validation mechanisms in each `FetchAuthority` function should be thoroughly reviewed.  The `policy_map.cc` file's policy merging and comparison logic should be reviewed for potential bypass vulnerabilities.  Implement robust policy validation to prevent policy enforcement bypass.  The policy parsing and validation mechanisms should be thoroughly reviewed to prevent policy enforcement bypass.  The analysis of the `BrowserPolicyConnector` class reveals potential vulnerabilities related to policy enforcement bypass.  The `ProviderHasPolicies` function should be carefully reviewed to ensure that it accurately determines whether a provider has policies and prevents manipulation of policy data.
-
-* **Data Validation:**  All policy data should be thoroughly validated before being used to determine the management authority.  This includes checking for data types, ranges, and other constraints.  Thorough data validation is essential to prevent attackers from manipulating policy data.  All policy data should be validated to prevent manipulation.  The `policy_map.cc` file's handling of policy values should be reviewed for data validation vulnerabilities.  Implement robust data validation to prevent policy data manipulation.  All policy data should be validated to prevent manipulation.  The analysis of the `BrowserPolicyConnector` class reveals potential vulnerabilities related to data validation.  The functions for retrieving URLs for device management, real-time reporting, and encrypted reporting should be carefully reviewed to ensure that they handle various data types and potential injection vectors.
-
-* **Access Control:**  Implement appropriate access control mechanisms to prevent unauthorized modification of policy data.  Access control mechanisms should be implemented to prevent unauthorized modification of policy data.  Implement robust access control mechanisms to prevent unauthorized modification of policy data.
-
-* **Security Auditing:**  Consider adding logging or auditing mechanisms to track policy changes and access attempts.  Implement robust logging and auditing to track policy changes and access attempts.  Comprehensive logging and auditing are crucial for tracking policy changes and detecting potential attacks.  Logging should be added to track policy fetching and validation results.  Implement robust logging and auditing mechanisms to track policy changes and access attempts.
-
-* **Policy Tampering:**  Analyze the potential for attackers to tamper with policy data.  Implement mechanisms to detect and prevent policy tampering.  Mechanisms should be implemented to detect and prevent tampering with policy data.  Implement mechanisms to detect and prevent policy tampering, such as using digital signatures or other cryptographic techniques.
-
-* **Denial-of-Service:**  Assess the vulnerability to denial-of-service attacks.  Could an attacker flood the policy system with requests or manipulate policy data to cause the system to become unresponsive.  Robust error handling and rate limiting should be implemented to prevent denial-of-service attacks.  Error handling should be improved in all functions to prevent denial-of-service attacks.  Implement robust error handling and rate limiting to prevent denial-of-service attacks.
-
-**Further Analysis and Potential Issues (Updated):**
-
-The analysis of the `components/policy/core/common/policy_loader_win.cc` file reveals potential vulnerabilities related to registry access, input validation, error handling, and concurrency control in the Windows policy loading mechanism.  The code should be thoroughly reviewed to ensure that it handles registry access securely, validates input data, handles errors gracefully, and protects against race conditions.  Specific attention should be paid to the `Load` function, which reads policy data from the Windows registry, and the `SetupWatches` function, which sets up event handlers to monitor for registry changes.  The use of `RegOpenKeyEx`, `RegQueryValueEx`, and `RegCloseKey` should be carefully reviewed to ensure secure registry access.  Robust input validation and error handling are crucial to prevent various attacks.  The code should be reviewed to ensure that it handles various error conditions gracefully and securely.  The use of `WaitableEvent` to monitor for registry changes should be carefully reviewed to prevent race conditions and ensure that notifications are handled correctly and securely.  The code should be reviewed to ensure that it handles various error conditions gracefully and securely.  The use of `WaitableEvent` to monitor for registry changes should be carefully reviewed to prevent race conditions and ensure that notifications are handled correctly and securely.  The analysis of the `BrowserPolicyConnector` class reveals potential vulnerabilities related to race conditions in policy fetching and initialization.  The `InitInternal` function should be carefully reviewed for potential race conditions.  Appropriate synchronization mechanisms should be implemented to ensure that policy data is accessed and processed consistently.
-
-**Policy Blocklist Navigation Throttle (Added):**
-
-Analysis of `components/policy/content/policy_blocklist_navigation_throttle.cc` reveals several potential security considerations:
-
-* **Blocklist/Allowlist Handling:** The handling of blocklists and allowlists should be reviewed for potential vulnerabilities related to data validation, input sanitization, and the prevention of bypass techniques.  The `GetURLBlocklistState` function should be carefully examined.
-
-* **Safe Browsing Interaction:** The interaction with the `SafeSitesNavigationThrottle` should be reviewed to ensure that it is secure and does not introduce vulnerabilities.
-
-* **Asynchronous Operations:** The use of asynchronous operations and callbacks should be carefully reviewed to prevent race conditions.
-
-* **Error Handling:** The error handling mechanisms should be reviewed to ensure that errors are handled gracefully and securely, preventing information leakage and unexpected behavior.
-
-* **Input Validation:** Implement robust input validation for URLs to prevent injection attacks.
+* **Arbitrary Code Execution:** Improper policy handling could allow code execution.
+* **Data Leakage:** Sensitive data could be leaked through policy handling.  The handling of policy data in `policy_map.cc` needs to be reviewed for potential data leakage vulnerabilities.
+* **Denial-of-Service (DoS):**  Policy manipulation could lead to DoS.  The policy handling logic should be reviewed for potential denial-of-service vulnerabilities.
+* **Cross-Origin Issues:** Improper handling of cross-origin policies could lead to vulnerabilities.
+* **Input Validation:** Insufficient input validation could allow injection attacks.  The `Set` and `LoadFrom` functions in `policy_map.cc` handle policy data and need to be reviewed for proper input validation and sanitization.
+* **Policy Setting and Merging:**  Incorrect handling of policy setting and merging could allow malicious policies to override legitimate policies or introduce inconsistencies.  The `Set`, `MergeFrom`, and `MergePolicy` functions in `policy_map.cc` are crucial for secure policy management.
+* **Unsafe Value Access:**  The `GetValueUnsafe` and `GetMutableValueUnsafe` functions bypass policy checks and could be exploited to access or modify sensitive data.  These functions' usage needs careful review.
 
 
-**Areas Requiring Further Investigation (Updated):**
+## Further Analysis and Potential Issues (Updated):
 
-* **Race Condition Mitigation:** Implement appropriate synchronization mechanisms to prevent race conditions in the asynchronous policy fetching and initialization processes.
+* **Race Conditions:** Asynchronous policy fetching and interactions with multiple components introduce race condition risks. Implement synchronization.  The interaction between different policy providers and the policy service needs careful analysis for potential race conditions.
+* **Policy Enforcement Bypass:** Malformed policy configurations could bypass restrictions. Implement robust policy validation.  The policy validation logic in `policy_map.cc` and other policy-related files needs to be strengthened.
+* **Data Validation:** Validate all policy data before use.  Thorough data validation is essential.  The handling of policy values in `policy_map.cc` should be reviewed.
+* **Access Control:** Implement access control to prevent unauthorized policy modification.  The access control mechanisms for policy data need to be reviewed and strengthened.
+* **Security Auditing:** Add logging/auditing to track policy changes and access.  Comprehensive logging and auditing are crucial.
+* **Policy Tampering:** Analyze potential for policy tampering. Implement detection and prevention mechanisms.
+* **Denial-of-Service:** Assess DoS vulnerability. Implement error handling and rate limiting.
+* **Policy Map Handling:**  The `PolicyMap` class in `policy_map.cc` is central to policy management.  Key functions include `Set`, `LoadFrom`, `MergeFrom`, `MergePolicy`, `GetValueUnsafe`, `GetMutableValueUnsafe`, `IsPolicySet`, `SetSourceForAll`, and `SetAllInvalid`.  Potential security vulnerabilities include insecure policy setting and overriding, improper policy loading, vulnerabilities in policy merging, unsafe value access, and misuse of policy modification functions.
 
-* **Policy Enforcement Bypass:** Implement robust policy validation mechanisms to prevent attackers from crafting malformed policies that bypass intended restrictions.
+**Policy Blocklist Navigation Throttle:**
 
-* **Data Validation:** Implement robust data validation for all policy data to prevent manipulation and ensure that policy data conforms to expected formats and constraints.
+* **Blocklist/Allowlist Handling:** Review blocklist/allowlist handling for bypasses.
+* **Safe Browsing Interaction:** Review Safe Browsing interaction for security.
+* **Asynchronous Operations:** Review asynchronous operations for race conditions.
+* **Error Handling:** Review error handling for security and information leakage.
+* **Input Validation:** Implement URL input validation.
 
-* **Access Control:** Implement appropriate access control mechanisms to prevent unauthorized modification of policy data.
+## Areas Requiring Further Investigation (Updated):
 
-* **Security Auditing:** Implement robust logging and auditing mechanisms to track policy changes and access attempts.  This includes logging policy fetching and validation results.
+* **Race Condition Mitigation:** Implement synchronization.
+* **Policy Enforcement Bypass:** Implement robust policy validation.
+* **Data Validation:** Implement robust data validation.
+* **Access Control:** Implement access control mechanisms.
+* **Security Auditing:** Implement logging and auditing.
+* **URL Handling:** Implement URL input validation and sanitization.
+* **Error Handling:** Improve error handling and provide informative messages.
+* **Cloud Policy Security:** Review cloud policy management.
+* **Policy Proto Decoding:** Implement data validation and error handling in protobuf decoding.
+* **Proxy Policy Handling:** Review proxy policy provider security.
+* **Registry Access Security:** Implement error handling and access control for registry access.
+* **Input Validation:** Implement robust input validation for all policy data.
+* **Concurrency Control:** Implement locking to prevent race conditions.
+* **Timing Attack Mitigation:** Review code for timing attacks.
+* **Policy Blocklist Navigation Throttle:** Review `policy_blocklist_navigation_throttle.cc`.
+* **Policy Conflicts and Precedence:**  The logic for handling policy conflicts and precedence needs further analysis to ensure that higher-priority policies are correctly enforced and that conflicts are resolved securely.
+* **External Data Fetchers:**  The interaction with external data fetchers should be reviewed for potential vulnerabilities related to unauthorized access or data leakage.
 
-* **URL Handling:** Implement robust input validation and sanitization for URLs to prevent various attacks.
+## CVE Analysis and Relevance:
 
-* **Error Handling:** Improve error handling in all functions to prevent crashes and unexpected behavior. Provide more informative error messages and graceful error handling.
+(See previous response)
 
-* **Cloud Policy Security:** Conduct a thorough security review of the cloud policy management mechanisms, focusing on data validation, authorization, and secure communication with the cloud policy server.
+## Secure Contexts and Policy:
 
-* **Policy Proto Decoding:** Implement robust data validation and error handling in the policy protobuf decoding functions to prevent injection attacks and ensure secure handling of various policy types.
+Policy enforcement is crucial. Vulnerabilities could allow bypasses or manipulation. Robust validation, access control, and error handling are essential.
 
-* **Proxy Policy Handling:** Conduct a thorough security review of the proxy policy provider to address potential vulnerabilities related to delegate management, policy updates, and data handling.
+## Privacy Implications:
 
-* **Registry Access Security:** Implement robust error handling and access control mechanisms for registry access in `policy_loader_win.cc` to prevent unauthorized access or modification of registry data.
+Policies can impact user privacy.  The design and implementation should consider privacy implications.  Protect user privacy and provide granular control.
 
-* **Input Validation:** Implement robust input validation for all policy data to prevent various attacks.
+## Files Reviewed:
 
-* **Concurrency Control:** Implement appropriate locking mechanisms to prevent race conditions in concurrent access to policy data.
-
-* **Timing Attack Mitigation:** Review the code to prevent information leakage through timing attacks.
-
-* **Policy Blocklist Navigation Throttle:** Review the `policy_blocklist_navigation_throttle.cc` file for potential vulnerabilities related to blocklist/allowlist handling, safe browsing interaction, asynchronous operations, error handling, and input validation.
-
-
-**CVE Analysis and Relevance:**
-
-This section summarizes relevant CVEs and their connection to the discussed policy functionalities: Many CVEs in Chromium relate to vulnerabilities in policy handling, often stemming from insufficient input validation, race conditions, or flaws in policy enforcement. These could allow malicious actors to bypass policy restrictions, manipulate policy data, or cause denial-of-service conditions. Specific examples from the CVE list would need to be mapped to the relevant functions within the files listed above.
-
-**Secure Contexts and Policy:**
-
-Policy enforcement in Chromium is crucial for maintaining the security and integrity of the browser.  Policies control various aspects of the browser's behavior, including network settings, extension permissions, and other security-sensitive configurations.  Vulnerabilities in policy handling could allow attackers to bypass security restrictions or to manipulate the browser's behavior.  Robust policy validation, access control, and error handling are essential to prevent unauthorized actions and maintain system integrity.
-
-**Privacy Implications:**
-
-Policies can impact user privacy by controlling various aspects of the browser's behavior.  For example, policies can restrict access to certain features or data, or they can control how user data is collected and shared.  The design and implementation of policy mechanisms should carefully consider privacy implications.  Robust mechanisms for protecting user privacy, preventing data leakage, and providing users with granular control over policy settings are crucial to protect user privacy.
+* `chrome/browser/enterprise/browser_management/browser_management_status_provider.cc`
+* `chrome/browser/policy/profile_policy_connector.cc`
+* `components/policy/core/common/policy_map.cc`
+* `components/policy/core/common/policy_service.cc`
+* `components/policy/core/common/policy_service_impl.cc`
+* `components/policy/core/common/policy_loader_win.cc`
+* `components/policy/core/common/policy_loader_mac.mm`
+* `components/policy/core/common/schema_registry.cc`
+* `components/policy/core/common/cloud/cloud_policy_manager.cc`
+* `components/policy/core/common/policy_utils.cc`
+* `components/policy/core/common/policy_proto_decoders.cc`
+* `components/policy/core/common/proxy_policy_provider.cc`
+* `components/policy/core/browser/browser_policy_connector.cc`
+* `components/policy/content/policy_blocklist_navigation_throttle.cc`
