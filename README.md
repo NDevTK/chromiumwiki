@@ -22,16 +22,17 @@ Each wiki page follows a consistent format:
 
 7. **Additional Notes:** This section contains any additional relevant information or findings.
 
-**Individual Wiki Pages (ordered by VRP risk):**
+**Individual Wiki Pages (ordered by VRP risk and impact):**
 
 * [Tabs](tabs.md) - Potential vulnerabilities in Chromium's core tab management logic and UI.
 * [Autofill](autofill.md) - Security analysis of the Chromium autofill component.
 * [Payments](payments.md) - Potential vulnerabilities in Chromium Payment Handling.
-* [Extensions API](extensions_api.md) - Potential vulnerabilities in the Chromium Extensions API.
 * [Extension Security](extension_security.md) - Security analysis of Chromium extensions.
+* [Extensions WebRequest API](extensions_web_request_api.md) - Security analysis of the Chromium Extensions WebRequest API.
 * [WebRTC](webrtc.md) - Security analysis of the Chromium WebRTC component.
 * [Downloads](downloads.md) - Security analysis of the Chromium downloads component.
 * [Service Worker Payments](service_worker_payments.md) - Security analysis of payment handling within service workers.
+* [DevTools](devtools.md) - Security analysis of Chromium's Developer Tools (DevTools).
 * [Blink Layout](blink_layout.md) - Security analysis of Blink's layout engine.
 * [Blink Frame](blink_frame.md) - Security analysis of Blink's frame handling.
 * [Blink Core](blink_core.md) - Security analysis of core modules and functionalities within Blink.
@@ -57,10 +58,8 @@ Each wiki page follows a consistent format:
 * [Crash Reporting](crash.md) - Analysis of Chromium crash reports.
 * [Desk Management](desk_management.md) - Potential vulnerabilities in desk management.
 * [Device Signals](device_signals.md) - Potential vulnerabilities related to device signals.
-* [DevTools](devtools.md) - Security analysis of Chromium's Developer Tools (DevTools).
 * [DevTools File Helper](devtools_file_helper.md) - Security analysis of Chromium's DevTools file helper functionality.
 * [DevTools UI Bindings](devtools_ui_bindings.md) - Security analysis of Chromium's DevTools UI bindings.
-* [Drag and Drop](drag_and_drop.md) - Security analysis of Chromium's drag-and-drop functionality.
 * [Event Dispatching](event_dispatching.md) - Potential logic flaws in event dispatching.
 * [Eye Dropper](eye_dropper.md) - Potential vulnerabilities in the eye dropper functionality.
 * [Feature Flags](flags.md) - Security analysis of Chromium's feature flags system.
@@ -70,12 +69,10 @@ Each wiki page follows a consistent format:
 * [History](history.md) - Potential logic flaws in history management.
 * [History Clusters](history_clusters.md) - Potential vulnerabilities related to History Clustering in Chromium.
 * [Host Resolution](host_resolution.md) - Potential vulnerabilities in host resolution.
-* [HTTP](http.md) - Security analysis of Chromium's HTTP implementation.
 * [IPC](ipc.md) - Potential vulnerabilities in Chromium inter-process communication (IPC).
 * [Input Event Router](input_event_router.md) - Security implications of Chromium's input event routing.
 * [InputMethodManagerWrapper](input_method_manager_wrapper.md) - Security analysis of Chromium's InputMethodManagerWrapper on Android.
 * [Keyboard Accelerators](keyboard_accelerators.md) - Potential logic flaws in keyboard accelerator management.
-* [Media](media.md) - Potential vulnerabilities in Chromium media handling.
 * [Media Router](media_router.md) - Security analysis of Chromium's media router component.
 * [Memory Management](memory_management.md) - Potential vulnerabilities in Chromium memory management across processes.
 * [Mojo](mojo.md) - Potential vulnerabilities in Mojo broker.
@@ -84,7 +81,6 @@ Each wiki page follows a consistent format:
 * [Omnibox](omnibox.md) - Security analysis of the Chromium omnibox component.
 * [Other Security Headers](other_security_headers.md) - Analysis of other security headers in Chromium.
 * [Password Management](password_management.md) - Potential vulnerabilities in password management.
-* [Payments](payments.md) - Potential vulnerabilities in Chromium Payment Handling.
 * [Permissions Policy](permissions_policy.md) - Analysis of Chromium's Permissions Policy implementation.
 * [Plugin Security](plugin_security.md) - Potential vulnerabilities in Chromium plugin process security.
 * [Policy](policy.md) - Potential logic flaws in policy handling.
@@ -95,8 +91,6 @@ Each wiki page follows a consistent format:
 * [Process Lifecycle](process_lifecycle.md) - Potential vulnerabilities in Chromium process lifecycle management.
 * [Profile Management](profile_management.md) - Potential vulnerabilities related to profile management.
 * [QR Code Generator](qr_code_generator.md)
-* [QUIC](quic.md) - Security analysis of Chromium's QUIC implementation.
-* [README](README.md) - This file.
 * [Render Frame Host Impl](render_frame_host_impl.md) - Security analysis of Chromium's RenderFrameHostImpl.
 * [RenderWidgetHostViewAura](render_widget_host_view_aura.md) - Security analysis of the Aura implementation of the render widget host view.
 * [RenderWidgetHostViewAndroid](render_widget_host_view_android.md) - Security analysis of the Android implementation of the render widget host view.
@@ -125,7 +119,6 @@ Each wiki page follows a consistent format:
 * [Webauthn](webauthn.md) - Security analysis of Chromium's Web Authentication implementation.
 * [Webid](webid.md) - Security analysis of Chromium's WebID implementation.
 * [WebSockets](websockets.md) - Security analysis of Chromium's WebSockets implementation.
-* [WebRTC](webrtc.md) - Security analysis of the Chromium WebRTC component.
 * [Worker Threads](worker_threads.md) - Potential logic flaws in worker thread management.
 
 **Note:** The original `network.md` and `rendering_engine.md` files have been deleted, as their content has been split into more specific wikis. The `service_workers.md` file has been updated to remove payment-related content, which is now in `service_worker_payments.md`. The `security_headers.md` file has been split into more specific wiki pages for each security header.
@@ -140,13 +133,13 @@ Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prio
 
 * **Payments (`payments.md`):**  The substantial reward for `payment_request_sheet_controller.cc` ($16,326) indicates vulnerabilities in payment handling. Prioritize secure communication, data encryption, and data storage.
 
-* **Extensions (`extension_security.md`, `extensions_api.md`):**  High rewards for `tabs_api.cc` ($14,604) and `debugger_apitest.cc` ($15,309) highlight vulnerabilities in extension APIs and debugging. Focus on the permission model, sandbox bypasses, and API vulnerabilities.
+* **Extensions (`extension_security.md`, `extensions_web_request_api.md`, `extensions_debugger_api.md`, `extensions_tabs_api.md`, `extensions_webrtc_audio_private_api.md`):**  High rewards for `tabs_api.cc` ($14,604) and `debugger_apitest.cc` ($15,309) highlight vulnerabilities in extension APIs and debugging. Focus on the permission model, sandbox bypasses, and API vulnerabilities. Also, pay close attention to the `extensions_web_request_api.md`, `extensions_debugger_api.md`, `extensions_tabs_api.md`, and `extensions_webrtc_audio_private_api.md` pages.
 
-* **WebRTC (`webrtc.md`):** The significant reward for `audio_debug_recordings_handler.cc` ($30,000) points to vulnerabilities in media handling. Focus on data stream integrity, media sanitization, and real-time communication security.
+* **WebRTC (`webrtc.md`):** The significant reward for `audio_debug_recordings_handler.cc` ($30,000) points to vulnerabilities in media handling. Focus on data stream integrity, media sanitization, and real-time communication security. Also, pay close attention to the `media_audio_debug_recordings_handler.md`, `media_web_contents_video_capture_device.md`, and `media_stream_dispatcher_host.md` pages.
 
 * **Blink (`blink_layout.md`, `blink_frame.md`, `blink_core.md`):** The large number of rewarded files in the Blink components suggests a wide range of potential vulnerabilities. Focus on JavaScript execution, DOM manipulation, and cross-origin resource loading.
 
-* **Network (`disk_cache.md`, `quic.md`, `websockets.md`, `http.md`):**  The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling. Focus on protocol handling, cookie handling, and caching mechanisms.
+* **Network (`disk_cache.md`, `quic.md`, `websockets.md`, `http.md`):**  The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling. Focus on protocol handling, cookie handling, and caching mechanisms. Also, pay close attention to the `http.md` page.
 
 * **Downloads (`downloads.md`):** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks.
 
