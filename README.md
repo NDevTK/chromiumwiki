@@ -2,7 +2,7 @@
 
 This wiki contains analysis of Chromium components and potential security vulnerabilities.
 
-**Important Note:** Research findings should be added directly to the relevant wiki page, following the format below. Do not create separate files for research notes.  **Also, please keep the security research tips below very detailed; do not shorten them.**  **Additionally, please keep the wiki page list ordered by VRP risk (highest payout first).**
+**Important Note:** Research findings should be added directly to the relevant wiki page, following the format below. Do not create separate files for research notes. **Also, please keep the security research tips below very detailed; do not shorten them.**  **Additionally, please keep the wiki page list ordered by VRP risk (highest payout first).**
 
 **Format of Each Wiki Page:**
 
@@ -21,7 +21,6 @@ Each wiki page follows a consistent format:
 6. **Privacy Implications:** This section discusses the privacy implications of the component's functionalities.
 
 7. **Additional Notes:** This section contains any additional relevant information or findings.
-
 
 **Individual Wiki Pages (ordered by VRP risk):**
 
@@ -59,6 +58,7 @@ Each wiki page follows a consistent format:
 * [Desk Management](desk_management.md) - Potential vulnerabilities in desk management.
 * [Device Signals](device_signals.md) - Potential vulnerabilities related to device signals.
 * [DevTools](devtools.md) - Security analysis of Chromium's Developer Tools (DevTools).
+* [DevTools File Helper](devtools_file_helper.md) - Security analysis of Chromium's DevTools file helper functionality.
 * [DevTools UI Bindings](devtools_ui_bindings.md) - Security analysis of Chromium's DevTools UI bindings.
 * [Drag and Drop](drag_and_drop.md) - Security analysis of Chromium's drag-and-drop functionality.
 * [Event Dispatching](event_dispatching.md) - Potential logic flaws in event dispatching.
@@ -118,6 +118,7 @@ Each wiki page follows a consistent format:
 * [Synthetic Smooth Scroll Gesture](synthetic_smooth_scroll_gesture.md) - Security analysis of Chromium's handling of synthetic smooth scroll gestures.
 * [Sync](sync.md) - Potential vulnerabilities in the Chromium synchronization system.
 * [Tab Sharing UI](tab_sharing_ui.md) - Security analysis of the Chromium tab sharing UI.
+* [Tabs](tabs.md) - Potential vulnerabilities in Chromium's core tab management logic and UI.
 * [Task Scheduling](task_scheduling.md) - Potential vulnerabilities in task scheduling.
 * [Translation UI](translation_ui.md) - Potential vulnerabilities in the Chromium translation UI.
 * [URL Utilities](url_utilities.md) - Security analysis of URL utility functions in Chromium.
@@ -128,27 +129,25 @@ Each wiki page follows a consistent format:
 * [WebRTC](webrtc.md) - Security analysis of the Chromium WebRTC component.
 * [Worker Threads](worker_threads.md) - Potential logic flaws in worker thread management.
 
-
-**Note:** The original `network.md` and `rendering_engine.md` files have been deleted, as their content has been split into more specific wikis.  The `service_workers.md` file has been updated to remove payment-related content, which is now in `service_worker_payments.md`.  The `security_headers.md` file has been split into more specific wiki pages for each security header.
-
+**Note:** The original `network.md` and `rendering_engine.md` files have been deleted, as their content has been split into more specific wikis. The `service_workers.md` file has been updated to remove payment-related content, which is now in `service_worker_payments.md`. The `security_headers.md` file has been split into more specific wiki pages for each security header.
 
 **Tips for Security Researchers:**
 
-Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prioritize investigating files with high reward payouts, as these often indicate critical vulnerabilities.  The data reveals several key areas for focused investigation:
+Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prioritize investigating files with high reward payouts, as these often indicate critical vulnerabilities. The data reveals several key areas for focused investigation:
 
-* **Tab Management (`tabs.md`, `drag_and_drop.md`):**  The exceptionally high rewards for files like `tab_strip_model.cc` ($53,357) and `tabs_api.cc` ($14,604) highlight the criticality of tab management security.  Focus your research on cross-origin communication, race conditions, and extension interactions.  The drag-and-drop functionality within the tab strip also presents a high-risk area.  Thoroughly analyze data validation, event handling, and cross-origin interactions to prevent injection attacks and data corruption.
+* **Tab Management (`tabs.md`, `drag_and_drop.md`):**  The exceptionally high rewards for files like `tab_strip_model.cc` ($53,357) and `tabs_api.cc` ($14,604) highlight the criticality of tab management security. Focus your research on cross-origin communication, race conditions, and extension interactions. The drag-and-drop functionality within the tab strip also presents a high-risk area. Thoroughly analyze data validation, event handling, and cross-origin interactions to prevent injection attacks and data corruption.
 
-* **Autofill (`autofill.md`):** The extremely high reward for `autofill_popup_controller_impl.cc` ($52,544) points to significant vulnerabilities in the autofill popup.  Concentrate on data sanitization, data persistence, and form submission.
+* **Autofill (`autofill.md`):** The extremely high reward for `autofill_popup_controller_impl.cc` ($52,544) points to significant vulnerabilities in the autofill popup. Concentrate on data sanitization, data persistence, and form submission.
 
-* **Payments (`payments.md`):**  The substantial reward for `payment_request_sheet_controller.cc` ($16,326) indicates vulnerabilities in payment handling.  Prioritize secure communication, data encryption, and data storage.
+* **Payments (`payments.md`):**  The substantial reward for `payment_request_sheet_controller.cc` ($16,326) indicates vulnerabilities in payment handling. Prioritize secure communication, data encryption, and data storage.
 
-* **Extensions (`extension_security.md`, `extensions_api.md`):**  High rewards for `tabs_api.cc` ($14,604) and `debugger_apitest.cc` ($15,309) highlight vulnerabilities in extension APIs and debugging.  Focus on the permission model, sandbox bypasses, and API vulnerabilities.
+* **Extensions (`extension_security.md`, `extensions_api.md`):**  High rewards for `tabs_api.cc` ($14,604) and `debugger_apitest.cc` ($15,309) highlight vulnerabilities in extension APIs and debugging. Focus on the permission model, sandbox bypasses, and API vulnerabilities.
 
-* **WebRTC (`webrtc.md`):** The significant reward for `audio_debug_recordings_handler.cc` ($30,000) points to vulnerabilities in media handling.  Focus on data stream integrity, media sanitization, and real-time communication security.
+* **WebRTC (`webrtc.md`):** The significant reward for `audio_debug_recordings_handler.cc` ($30,000) points to vulnerabilities in media handling. Focus on data stream integrity, media sanitization, and real-time communication security.
 
-* **Blink (`blink_layout.md`, `blink_frame.md`, `blink_core.md`):** The large number of rewarded files in the Blink components suggests a wide range of potential vulnerabilities.  Focus on JavaScript execution, DOM manipulation, and cross-origin resource loading.
+* **Blink (`blink_layout.md`, `blink_frame.md`, `blink_core.md`):** The large number of rewarded files in the Blink components suggests a wide range of potential vulnerabilities. Focus on JavaScript execution, DOM manipulation, and cross-origin resource loading.
 
-* **Network (`disk_cache.md`, `quic.md`, `websockets.md`, `http.md`):**  The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling.  Focus on protocol handling, cookie handling, and caching mechanisms.
+* **Network (`disk_cache.md`, `quic.md`, `websockets.md`, `http.md`):**  The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling. Focus on protocol handling, cookie handling, and caching mechanisms.
 
 * **Downloads (`downloads.md`):** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks.
 
