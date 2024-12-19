@@ -15,6 +15,7 @@ This document analyzes potential security vulnerabilities in Chromium's drag-and
 * **Window Properties:** Misuse of window properties could potentially affect drag and drop behavior or leak sensitive data.
 * **File Handling:** Insecure handling of file paths or file contents during drag and drop could lead to vulnerabilities.  The `OSExchangeData` functions related to file handling, as well as the file handling logic in `chrome_web_contents_view_handle_drop.cc`, need careful review.
 * **Custom Data Formats:** Insufficient validation or handling of custom data formats in `OSExchangeData` could lead to vulnerabilities.
+*   **Drag and Drop Download Vulnerabilities:** The handling of drag and drop downloads, including the interaction with `download_manager_impl.cc` and `drag_download_file.cc`, could be vulnerable to manipulation.
 
 
 ## Further Analysis and Potential Issues

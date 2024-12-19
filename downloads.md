@@ -11,6 +11,10 @@ This document analyzes the security of the Chromium downloads component, focusin
 * **Denial-of-Service (DoS):** DoS attacks could be launched by manipulating download requests or responses.  The download manager, Downloads API, and Android UI should implement robust DoS protection.
 * **Cross-Origin Issues:** Improper handling of cross-origin downloads could lead to vulnerabilities.  Secure handling and CORS policy enforcement are essential.
 * **Race Conditions:** Concurrent operations during downloads could lead to race conditions.  Synchronization mechanisms are needed.  The asynchronous nature of download operations and the Downloads API, as well as the UI updates on Android, introduce race condition risks.
+*   **Download Creation and Resumption Vulnerabilities:** The download creation and resumption process, including the interaction with `InProgressDownloadManager`, could be vulnerable to manipulation.
+*   **Download Interception Vulnerabilities:** The download interception process, including the checks performed by `DownloadManagerImpl` and its delegate, could be vulnerable to bypasses.
+*   **Download Persistence Vulnerabilities:** The download persistence process, including the interaction with the download database, could be vulnerable to data corruption.
+*   **Download Security Vulnerabilities:** The security checks performed by `DownloadManagerImpl`, such as the URL safety check, could be vulnerable to bypasses.
 * **PPAPI Download Vulnerabilities:**  PPAPI downloads introduce an attack surface.
 
 
