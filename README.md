@@ -118,7 +118,6 @@ Each wiki page follows a consistent format:
 * [Synthetic Smooth Scroll Gesture](synthetic_smooth_scroll_gesture.md) - Security analysis of Chromium's handling of synthetic smooth scroll gestures.
 * [Sync](sync.md) - Potential vulnerabilities in the Chromium synchronization system.
 * [Tab Sharing UI](tab_sharing_ui.md) - Security analysis of the Chromium tab sharing UI.
-* [Tabs](tabs.md) - Potential vulnerabilities in Chromium's core tab management logic and UI.
 * [Task Scheduling](task_scheduling.md) - Potential vulnerabilities in task scheduling.
 * [Translation UI](translation_ui.md) - Potential vulnerabilities in the Chromium translation UI.
 * [URL Utilities](url_utilities.md) - Security analysis of URL utility functions in Chromium.
