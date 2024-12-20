@@ -39,3 +39,4 @@ git clone https://github.com/NDevTK/chromiumwiki.git
 *   Do not change wiki files without new information.
 *   Keep track of the files you have reviewed and any notes.
 *   The `list_code_definition_names` tool does not work.
+*   Keep the readme tips section updated with new wiki pages.
