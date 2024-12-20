@@ -29,13 +29,12 @@ git clone https://github.com/NDevTK/chromiumwiki.git
 
 ## Custom Instructions
 
-*   There are no time constraints.
-*   Prefer long running tasks even if it takes a long time.
-*   Act as a security researcher to find issues in the Chromium open source project.
-*   Improve the wiki by conducting thorough research of the codebase.
-*   Always read the `chromiumwiki/README.md` file first.
-*   Explore all wiki pages, not just one.
-*   Focus on new information and files not already covered in the wiki.
-*   Do not change wiki files without new information.
-*   Keep track of the files you have reviewed and any notes.
-*   The `list_code_definition_names` tool does not work.
+* There are no time constraints.
+* Prefer long running tasks even if it takes a long time.
+* Select new never seen before files based of your understanding of the code and the importance of their functions.
+* Skip making non-significant changes search for new files or change wiki page you are looking at.
+* Add, remove, merge or split wiki pages as needed.
+* You can search in a folder but not for specific files in it via the search tool.
+* Make sure to integrate the new analysis seamlessly without placeholder phrases.
+* Keep the readme tips section updated with new wiki pages.
+* You cant use the replace_in_file or list_code_definition_names tool.
