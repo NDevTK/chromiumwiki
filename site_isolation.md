@@ -58,7 +58,24 @@ The process allocation for a navigation is determined based on the `UrlInfo` obj
 -   **`SiteInfo::GetSiteForURLInternal`**: This function determines the site URL for a given `UrlInfo`. Incorrectly determining the site can lead to incorrect same-site/cross-site classifications.
 -   **`NavigationRequest::GetUrlInfo`**: This function constructs a `UrlInfo` object based on the navigation request. Errors in populating the `UrlInfo` can lead to incorrect isolation decisions.
 -   **`NavigationRequest::GetOriginToCommit`**: This function determines the origin that will be committed for the navigation. Incorrectly determining the origin can lead to security bypasses.
--   **`NavigationRequest::GetOriginForURLLoaderFactoryBeforeResponse` and `NavigationRequest::GetOriginForURLLoaderFactoryAfterResponse`**: These functions calculate the origin for creating a `URLLoaderFactory`. Errors here can lead to incorrect origin assignments for network requests, potentially allowing cross-origin leaks.
+-   **`NavigationRequest::GetOriginForURLLoaderFactoryBeforeResponse`**: This function calculates the origin before the response is received. It handles sandbox flags and data URLs, and any errors in this logic can lead to incorrect origin assignments.
+    -   It uses `GetOriginForURLLoaderFactoryUncheckedWithDebugInfo` to get an initial origin, then applies sandbox flags to derive the final origin.
+    -   It handles data URLs by using the base URL's origin, if available.
+    -   It uses `DeriveNewOpaqueOrigin` to create a unique origin when sandbox flags are present.
+-   **`NavigationRequest::GetOriginForURLLoaderFactoryAfterResponse`**: This function calculates the origin after the response is received. It differs from the "before" version in that it uses the final response headers and the committed URL to determine the origin.
+    -   It handles error pages by returning an opaque origin.
+    -   It handles `loadDataWithBaseURL` navigations by using the base URL's origin.
+    -   It uses `GetOriginForURLLoaderFactoryUncheckedWithDebugInfo` to get an initial origin, then applies sandbox flags to derive the final origin.
+    -   It uses `DeriveNewOpaqueOrigin` to create a unique origin when sandbox flags are present.
+-   **`NavigationRequest::ComputeCrossOriginIsolationKey`**: This function computes the `CrossOriginIsolationKey` based on the document isolation policy. Errors in this logic can lead to incorrect isolation decisions.
+-   **`NavigationRequest::AddOriginAgentClusterStateIfNecessary`**: This function adds the origin to the list of origins that are isolated by the Origin-Agent-Cluster. Errors in this logic can lead to incorrect isolation decisions.
+-   **`NavigationRequest::DetermineOriginAgentClusterEndResult`**: This function determines the final result of the origin agent cluster isolation. Errors in this logic can lead to incorrect isolation decisions.
+-   **`NavigationRequest::CheckCSPEmbeddedEnforcement`**: This function checks if the Content Security Policy Embedded Enforcement is valid. Errors in this logic can lead to incorrect enforcement of CSP policies.
+-   **`NavigationRequest::CheckCredentialedSubresource`**: This function checks if the subresource request contains embedded credentials. Errors in this logic can lead to incorrect blocking of subresource requests.
+-   **`NavigationRequest::CheckAboutSrcDoc`**: This function checks if the navigation is to an about:srcdoc URL. Errors in this logic can lead to incorrect handling of about:srcdoc navigations.
+-   **`NavigationRequest::ShouldRequestSiteIsolationForCOOP`**: This function determines if a site should be isolated due to COOP. Errors in this logic can lead to sites not being isolated when they should be.
+-   **`NavigationRequest::ComputeCrossOriginEmbedderPolicy`**: This function computes the Cross-Origin-Embedder-Policy. Errors in this logic can lead to incorrect COEP values.
+-   **`NavigationRequest::CheckResponseAdherenceToCoep`**: This function checks if the response adheres to the embedder's COEP. Errors in this logic can lead to incorrect enforcement of COEP policies.
 
 ## Areas for Further Research: Potential Security Logic Issues
 
