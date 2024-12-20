@@ -37,4 +37,4 @@ git clone https://github.com/NDevTK/chromiumwiki.git
 * You can search in a folder but not for specific files in it via the search tool.
 * Make sure to integrate the new analysis seamlessly without placeholder phrases.
 * Keep the readme tips section updated with new wiki pages.
-* You cant use the replace_in_file tool.
+* You cant use the replace_in_file or list_code_definition_names tool.
