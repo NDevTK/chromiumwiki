@@ -46,8 +46,6 @@ Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prio
 
 *   **Network (`disk_cache.md`, `quic.md`, `websockets.md`, `http.md`):**  The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling. Focus on protocol handling, cookie handling, and caching mechanisms. Also, pay close attention to the `http.md` page. Relevant files include: `network_context.h`, `http_cache_transaction.cc`, `websocket_channel.h`.
 
-*   **Downloads (`downloads.md`):** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks. Relevant files include: `download_manager_impl.cc`, `drag_download_file.cc`.
-
 *   **DevTools (`devtools.md`, `devtools_ui_bindings.md`):** The high rewards for `devtools_browsertest.cc` ($22,250) and `devtools_ui_bindings.cc` ($7,000) highlight the importance of secure DevTools implementation. Focus on unauthorized access, data leakage, command injection, and XSS vulnerabilities. Relevant files include: `devtools_browsertest.cc`, `devtools_ui_bindings.cc`.
 
 *   **Permissions (`permissions.md`):** Investigate the permission model, focusing on how permissions are granted, stored, and enforced. Relevant files include: `permission_request_manager.cc`, `permission_prompt_impl.cc`.
@@ -59,8 +57,6 @@ Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prio
 *   **WebAssembly (`wasm.md`):** Focus on the security of WebAssembly execution, including memory safety and control flow integrity. Relevant files include: `wasm-module.cc`, `wasm-compiler.cc`.
 
 *   **User Notes (`user_notes.md`):** Investigate the security of user note storage and retrieval, focusing on data integrity and access control. Relevant files include: `user_note_service.cc`, `user_note_utils.cc`.
-
-*   **Autofill Assistant (`autofill_assistant.md`):** Focus on the security of the Autofill Assistant, including data handling and interaction with web pages. Relevant files include: `client_headless.cc`, `ui_controller_android.cc`.
 
 *   **Web Share (`webshare.md`):** Investigate the security of the Web Share API, focusing on data sanitization and origin handling. Relevant files include: `sharing_dialog_view.cc`, `share_operation.cc`.
 
