@@ -86,8 +86,6 @@ Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prio
 
 *  **File System Access (`file_system_access.md`):** Investigate the security of the File System Access API, including file access and data handling. Relevant files include: `file_system_access_manager_impl.cc`, `file_system_chooser.cc`.
 
-*   **Native File System (`native_file_system.md`):** Focus on the security of the Native File System API, including file access and data handling. Relevant files include: `native_file_system_directory_access_confirmation_view.cc`, `native_file_system_directory_access_confirmation_view.h`.
-
 *   **Downloads (`downloads.md`):** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks. Relevant files include: `download_manager_impl.cc`, `drag_download_file.cc`, `download_target_determiner.cc`.
 
 *   **Printing (`printing.md`):** Investigate the security of printing functionality, including data handling and communication with print services. Relevant files include: `print_render_frame_helper.cc`, `print_web_view_helper.cc`.

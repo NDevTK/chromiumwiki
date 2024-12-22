@@ -38,3 +38,5 @@ git clone https://github.com/NDevTK/chromiumwiki.git
 * Make sure to integrate the new analysis seamlessly without placeholder phrases.
 * Keep the readme tips section updated with new wiki pages.
 * You cant use the replace_in_file or list_code_definition_names tool.
+* Issues could be cross-component make sure to cross-reference wiki pages.
+* Check cross-page data.
