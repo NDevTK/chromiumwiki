@@ -76,6 +76,34 @@ The `OnRequestRedirected` method in `navigation_request.cc` is crucial for handl
 
 The `OnRequestRedirected` method seems to incorporate several important security checks and policy enforcements during redirect handling. It validates URLs, enforces CSP, COOP, and COEP, and handles origin and site isolation appropriately. However, the points mentioned under "Potential Security Considerations and Further Investigation" could be further explored to enhance the security and robustness of redirect handling in Chromium.
 
+## BrowserURLHandlerImpl::RewriteURLIfNecessary and view-source: Scheme Analysis
+
+The `BrowserURLHandlerImpl::RewriteURLIfNecessary` function in `content/browser/browser_url_handler_impl.cc` is responsible for rewriting URLs before navigation. It uses a chain of handlers to perform URL rewriting.
+
+**Handler Order:**
+
+The handlers are executed in the following order:
+
+1.  `DebugURLHandler`: Handles renderer debug URLs.
+2.  `HandleViewSource`: Handles `view-source:` URLs and applies a scheme whitelist.
+3.  Custom handlers added by `ContentBrowserClient`.
+
+This order ensures that debug URLs and `view-source:` URLs are handled before custom client-specific rewrites.
+
+**`HandleViewSource` Scheme Whitelist:**
+
+The `HandleViewSource` function uses a whitelist to allow `view-source:` for specific schemes: `http`, `https`, `chrome`, `file`, and `filesystem`. This whitelist prevents `view-source:` from being used to view active schemes like `javascript:` and `data:`, which is a good security practice.
+
+**Security Considerations for `chrome-extension://`:**
+
+The `chrome-extension://` scheme is not explicitly included in the default whitelist. Allowing `view-source:` for `chrome-extension://` could expose extension code, but extensions are generally considered trusted. It's important to consider the potential security implications of exposing extension code via `view-source:`.
+
+**Further Investigation:**
+
+-   **Scheme Whitelist Completeness**: Review the scheme whitelist in `HandleViewSource` and consider if `chrome-extension://` or other schemes should be added or removed.
+-   **Custom Handler Security Risks**: Investigate potential security risks introduced by custom URL handlers added by content clients.
+-   **`view-source:` Bypass Testing**: Investigate potential bypasses of `view-source:` restrictions and scheme whitelist.
+
 ## Related Files
 
 -   `content/browser/renderer_host/navigation_request.h`

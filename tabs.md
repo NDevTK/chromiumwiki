@@ -32,6 +32,10 @@
 * **`ExecuteContextMenuCommand` Security Audit:** Analyze command implementations for input validation, authorization, and secure context handling in `ExecuteContextMenuCommand`.
 * **Tab Group and Drag-and-Drop Security:** Investigate group management and drag-and-drop functions in `TabDragController`.
 * **Unload Listener and Shutdown Security:** Analyze tab closing procedures for secure unload listener execution and graceful browser shutdown.
+* **Race Conditions in Tab Insertion:** Investigate potential race conditions in tab insertion and related operations, especially concerning concurrent access to `contents_data_` and the effectiveness of re-entrancy checks.
+* **Resource Management in Detach Notifications:** Analyze the `SendDetachWebContentsNotifications` function to ensure proper resource cleanup and notification handling during tab detachment. Pay attention to observer implementations and their handling of detach notifications to prevent potential resource leaks or inconsistencies.
+* **WebContents Discarding:** Investigate the `DiscardWebContentsAt` function in `tab_strip_model.cc` and `DiscardContents` in `tab_model.cc` to understand the resource management implications of discarding WebContents. Ensure that resources associated with discarded WebContents are properly released and that observers and callers correctly handle the discarded WebContents to avoid potential use-after-free or resource leaks.
+* **Tab Closing Sequence:** Analyze the `CloseTabs` and `CloseWebContentses` functions in `tab_strip_model.cc` to understand the complete tab closing sequence, including resource cleanup, unload listener handling, and observer notifications. Pay attention to the interaction between these functions and `DetachTabImpl` to ensure proper resource release and prevent potential security issues like use-after-free or resource leaks during tab closing.
 
 ## Key Files:
 
