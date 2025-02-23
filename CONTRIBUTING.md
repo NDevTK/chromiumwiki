@@ -2,7 +2,7 @@
 
 This wiki documents potential logic flaws and security issues found in the Chromium codebase. The goal is to improve the wiki by conducting thorough research and analysis of the codebase, with the assistance of an LLM (Large Language Model). This document outlines the guidelines for contributing to this wiki.
 
-This wiki is improved by Cline (VSCode extension) + Gemini 2.0 Flash (AI studio).
+This wiki is improved by Cline (VSCode extension) + Gemini 2.0 Flash Thinking (AI studio).
 
 ## How to Contribute
 
@@ -40,3 +40,6 @@ git clone https://github.com/NDevTK/chromiumwiki.git
 * You cant use the replace_in_file or list_code_definition_names tool.
 * Issues could be cross-component make sure to cross-reference wiki pages.
 * Check cross-page data.
+* Focus on wiki quality over quantity this means removing text and pages if they are not very very useful.
+* Always continue with the goal. (improve wiki)
+* Prefer write file over applying diff as it fails a lot.
