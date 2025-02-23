@@ -10,6 +10,14 @@ This page documents potential security vulnerabilities related to Content Securi
 * **Bypass Techniques:**  Attackers might discover bypass techniques for CSP, either through flaws in the implementation or by exploiting interactions with other browser features.  Regular testing and analysis are crucial to identify and mitigate bypasses.
 * **Unsafe Directives:**  The use of unsafe directives like `unsafe-inline` or `unsafe-eval` weakens CSP and should be avoided if possible.  The handling of these directives in `csp_directive_list.cc` needs careful review.
 * **Dangling Markup Injection:**  Dangling markup injection could allow attackers to bypass CSP by injecting malicious code into existing nonced elements.  The `IsNonceableElement` function is crucial for preventing this type of attack.
+* **Unicode and IDN Hostname Vulnerabilities:** CSP source matching might be vulnerable to bypasses due to improper handling of Unicode and Internationalized Domain Names (IDN) in hostnames. 
+    * **Unicode Homograph Attacks:** Attackers could use Unicode characters that look similar to ASCII characters (homographs) to create malicious hostnames that bypass CSP policies. For example, using the Cyrillic 'а' (U+0430) instead of the ASCII 'a' (U+0061) in a hostname.
+        * **Example:** A policy like `img-src https://example.com;` might be bypassed by a URL like `https://exаmple.com/malicious.jpg` if Unicode homographs are not correctly handled.
+    * **IDN Punycode Bypasses:** Inconsistent handling of Punycode and Unicode representations of IDN hostnames could lead to bypasses. If CSP policies use Unicode hostnames but URLs use Punycode, or vice versa, matching might fail, leading to vulnerabilities.
+        * **Example:** A policy like `img-src https://例え.com;` (Unicode) might be bypassed by a URL like `https://xn--r8jz45g.com/malicious.jpg` (Punycode) if Punycode conversion is not consistently applied in source matching.
+    * **Wildcard Matching Issues:** Wildcard matching with Unicode/IDN hostnames (`*.例え.com`) might have unexpected behavior or edge cases, potentially leading to overly permissive or restrictive policies.
+
+    **Recommendation:** Thoroughly review the `HostMatches` function in `csp_source.cc` and related URL parsing code to ensure proper Unicode normalization, homograph detection (if applicable), and consistent handling of Punycode and Unicode hostnames in CSP source matching. Add comprehensive test cases for Unicode and IDN hostnames to `csp_source_test.cc` to verify secure and correct behavior.
 
 ## Further Analysis and Potential Issues:
 

@@ -14,8 +14,72 @@ This page details the security aspects of the `NavigationRequest` class, includi
 The `NavigationRequest` class is responsible for enforcing various security policies and performing security checks during the navigation process. These include:
 
 -   **Content Security Policy (CSP)**: The `CheckCSPDirectives` and `CheckContentSecurityPolicy` methods are used to enforce CSP, including the `frame-src` and `fenced-frame-src` directives.
+    ### Content Security Policy (CSP) Enforcement Details
+
+    The `NavigationRequest` class enforces Content Security Policy (CSP) at different stages of the navigation lifecycle using the `CheckContentSecurityPolicy` and `CheckCSPDirectives` methods.
+
+    CSP checks are performed at the following stages:
+
+    * **Before sending the request (`BeginNavigationImpl`):** The `CheckContentSecurityPolicy` method is called to perform initial CSP checks before the request is sent.
+    * **On redirect (`OnRequestRedirected`):** The `CheckContentSecurityPolicy` method is called again to enforce CSP policies after a redirect.
+    * **On response started (`BeginNavigationImpl` and `OnResponseStarted`):** The `CheckContentSecurityPolicy` method is called again after the response has started.
+
+    The `CheckCSPDirectives` function performs the actual CSP directive checks. It takes several parameters, including:
+
+    * `parent_context`, `parent_policies`: CSP context and policies of the parent frame (if any).
+    * `initiator_context`, `initiator_policies`: CSP context and policies of the initiator frame (if any).
+    * `has_followed_redirect`, `url_upgraded_after_redirect`: Flags indicating if a redirect occurred and if the URL was upgraded to HTTPS.
+    * `is_response_check`: Flag indicating if the check is performed during response processing.
+    * `disposition`: CSP check disposition (e.g., enforce or report-only).
+
+    Within `CheckCSPDirectives`, individual CSP directives are checked using the `IsAllowedByCSPDirective` helper function. The directives checked include:
+
+    * `form-action`
+    * `frame-src`
+    * `fenced-frame-src`
+
+    The `IsAllowedByCSPDirective` function uses the `network::CSPContext::IsAllowedByCsp` method to determine if a given URL is allowed by a specific CSP directive, based on the provided CSP policies and context.
+
 -   **Cross-Origin Opener Policy (COOP)**: The `ShouldRequestSiteIsolationForCOOP` method determines if a site should be isolated due to COOP. The `coop_status` member variable tracks the COOP status for the navigation.
+    ### Cross-Origin Opener Policy (COOP) Enforcement Details
+
+    The `NavigationRequest` class incorporates Cross-Origin Opener Policy (COOP) enforcement to isolate browsing contexts and mitigate security risks associated with cross-origin interactions. COOP is a crucial security policy that allows developers to control how a document can be accessed by other documents from different origins, protecting against attacks like cross-site scripting (XSS) and cross-site information leakage.
+
+    **Key Methods and Variables:**
+
+    *   `ShouldRequestSiteIsolationForCOOP()`: This method determines whether site isolation should be requested for a given navigation based on the COOP status. Site isolation is a security mechanism that isolates resources from different sites into separate processes, further enhancing security.
+    *   `coop_status_`: This member variable of type `CrossOriginOpenerPolicyStatus` is used to track the COOP status throughout the navigation lifecycle. It stores information about the COOP policy and any violations encountered.
+    *   `SanitizeResponse(network::mojom::URLResponseHead *response_head)`: This method, part of the `CrossOriginOpenerPolicyStatus` class, is called during the response processing stage to sanitize the response headers based on the COOP policy. It checks for any violations and updates the COOP status accordingly.
+    *   `EnforceCOEP()`: This method enforces the Cross-Origin Embedder Policy (COEP), which is closely related to COOP and is used to further enhance cross-origin isolation.
+
+    **Enforcement Process:**
+
+    1.  **COOP Status Tracking:** The `coop_status_` member variable is initialized at the beginning of the navigation to track the COOP status.
+    2.  **Response Sanitization:** During the response processing stage, the `SanitizeResponse()` method is called to check the response headers against the COOP policy. This method may detect violations and update the `coop_status_` accordingly.
+    3.  **Site Isolation Request:** The `ShouldRequestSiteIsolationForCOOP()` method is used to determine if site isolation should be requested based on the COOP status.
+    4.  **COEP Enforcement:** The `EnforceCOEP()` method is called to enforce the Cross-Origin Embedder Policy (COEP), which works in conjunction with COOP to provide robust cross-origin isolation.
+
+    By enforcing COOP, `NavigationRequest` helps to ensure that browsing contexts are properly isolated, mitigating the risk of cross-origin attacks and protecting user data.
+
 -   **Cross-Origin Embedder Policy (COEP)**: The `ComputeCrossOriginEmbedderPolicy` and `CheckResponseAdherenceToCoep` methods are used to compute and enforce COEP. The `coep_reporter_` member variable is used to report COEP violations.
+    ### Cross-Origin Embedder Policy (COEP) Enforcement Details
+
+    The `NavigationRequest` class enforces Cross-Origin Embedder Policy (COEP) to further strengthen cross-origin isolation and enable powerful features like SharedArrayBuffer. COEP is a security policy that allows developers to declare a document's cross-origin isolation state, ensuring that it is isolated from other origins to varying degrees.
+
+    **Key Methods and Variables:**
+
+    *   `ComputeCrossOriginEmbedderPolicy()`: This method computes the Cross-Origin Embedder Policy (COEP) for a given navigation request. It examines the relevant headers and determines the appropriate COEP value based on the server's policy.
+    *   `CheckResponseAdherenceToCoep()`: This method checks whether the navigation response adheres to the computed COEP. It verifies if the response violates the COEP policy and returns a `BlockedByResponseReason` if a violation is detected.
+    *   `coep_reporter_`: This member variable of type `CrossOriginEmbedderPolicyReporter` is used to report COEP violations. It allows Chromium to send reports to the server or other designated endpoints when COEP policies are violated.
+
+    **Enforcement Process:**
+
+    1.  **COEP Computation:** The `ComputeCrossOriginEmbedderPolicy()` method is called to determine the appropriate COEP value for the navigation based on response headers and other factors.
+    2.  **Response Adherence Check:** The `CheckResponseAdherenceToCoep()` method is invoked to verify if the navigation response adheres to the computed COEP. This check ensures that the response satisfies the requirements of the COEP policy.
+    3.  **Violation Reporting:** If a COEP violation is detected, the `coep_reporter_` is used to report the violation to the server or other configured endpoints. This reporting mechanism helps developers identify and address COEP-related issues.
+
+    By enforcing COEP, `NavigationRequest` enhances the security of cross-origin interactions and enables the use of powerful features like SharedArrayBuffer, which require a secure, isolated environment.
+
 -   **Origin-Agent-Cluster Header**: The `AddOriginAgentClusterStateIfNecessary` and `DetermineOriginAgentClusterEndResult` methods handle the Origin-Agent-Cluster header and its impact on site isolation.
 -   **Sandboxing**: The `sandbox_flags_initiator_` and `sandbox_flags_inherited_` member variables track the sandbox flags for the navigation.
 -   **Private Network Requests**: The `private_network_request_policy_` member variable tracks the private network request policy for the navigation.
@@ -109,6 +173,7 @@ The `chrome-extension://` scheme is not explicitly included in the default white
 -   `content/browser/renderer_host/navigation_request.h`
 -   `content/browser/renderer_host/navigation_request.cc`
 -   `content/browser/renderer_host/navigation_request_core.md`
--   `content/browser/renderer_host/navigation_request_lifecycle.md`
--   `content/browser/child_process_security_policy_impl.h`
--   `content/browser/child_process_security_policy_impl.cc`
+-   `chromiumwiki/navigation_request_core.md`
+-   `chromiumwiki/navigation_request_lifecycle.md`
+-   `chromiumwiki/child_process_security_policy_impl.md`
+-   `chromiumwiki/child_process_security_policy_impl.cc`
