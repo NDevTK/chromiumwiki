@@ -28,31 +28,35 @@ Each wiki page follows a consistent format:
 
 **Tips for Security Researchers:**
 
-Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prioritize investigating files with high reward payouts, as these often indicate critical vulnerabilities. The data reveals several key areas for focused investigation:
+Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prioritize investigating files with high reward payouts, as these often indicate critical vulnerabilities. The data reveals several key areas for focused investigation, ordered by VRP risk (highest payout first):
 
-*   **Site Isolation (`site_isolation.md`):** Thoroughly investigate the core components of site isolation, including `UrlInfo` (`url_info.md`), `SiteInfo` (`site_info.md`), `SiteInstance` (`site_instance.md`), `SiteInstanceGroup` (`site_instance_group.md`), and `RenderProcessHost` (`render_process_host.md`) classes, as well as the `NavigationRequest` (`navigation_request.md`) and `ChildProcessSecurityPolicyImpl` (`child_process_security_policy_impl.md`) classes, for potential logic errors that could compromise site isolation. Relevant files include: `render_process_host.md`, `url_info.md`, `site_info.md`, `site_instance.md`, `child_process_security_policy_impl.md`.
+*   **Tab Management (`tabs.md`, `drag_and_drop.md`):** The exceptionally high rewards for files like `tab_strip_model.cc` ($53,357) and `tabs_api.cc` ($14,604) highlight the criticality of tab management security. Focus your research on cross-origin communication, race conditions, and extension interactions. The drag-and-drop functionality within the tab strip also presents a high-risk area. Thoroughly analyze data validation, event handling, and cross-origin interactions to prevent injection attacks and data corruption. Relevant files include: `tab_strip_model.cc`, `tabs_api.cc`, `chrome/browser/ui/views/tabs/dragging/tab_drag_controller.cc`.
 
-*   **Tab Management (`tabs.md`, `drag_and_drop.md`):**  The exceptionally high rewards for files like `tab_strip_model.cc` ($53,357) and `tabs_api.cc` ($14,604) highlight the criticality of tab management security. Focus your research on cross-origin communication, race conditions, and extension interactions. The drag-and-drop functionality within the tab strip also presents a high-risk area. Thoroughly analyze data validation, event handling, and cross-origin interactions to prevent injection attacks and data corruption. Relevant files include: `tab_strip_model.cc`, `tabs_api.cc`, `tab_drag_controller.cc`.
+*   **Autofill (`autofill.md`):** The extremely high reward for `autofill_popup_controller_impl.cc` ($52,544) points to significant vulnerabilities in the autofill popup. Concentrate on data sanitization, data persistence, and form submission. Relevant files include: `autofill_popup_controller_impl.cc`, `chrome/browser/ui/autofill/chrome_autofill_client.cc`.
 
-*   **Autofill (`autofill.md`):** The extremely high reward for `autofill_popup_controller_impl.cc` ($52,544) points to significant vulnerabilities in the autofill popup. Concentrate on data sanitization, data persistence, and form submission. Relevant files include: `autofill_popup_controller_impl.cc`, `chrome_autofill_client.cc`.
-
-*   **Payments (`payments.md`):**  The substantial reward for `payment_request_sheet_controller.cc` ($16,326) indicates vulnerabilities in payment handling. Prioritize secure communication, data encryption, and data storage. Relevant files include: `payment_request_sheet_controller.cc`, `payment_request_dialog_view.cc`.
-
-*   **Extensions (`extension_security.md`, `extensions_web_request_api.md`, `extensions_debugger_api.md`, `extensions_tabs_api.md`, `extensions_webrtc_audio_private_api.md`):**  High rewards for `tabs_api.cc` ($14,604) and `debugger_apitest.cc` ($15,309) highlight vulnerabilities in extension APIs and debugging. Focus on the permission model, sandbox bypasses, and API vulnerabilities. Also, pay close attention to the `extensions_web_request_api.md`, `extensions_debugger_api.md`, `extensions_tabs_api.md`, and `extensions_webrtc_audio_private_api.md` pages. Relevant files include: `tabs_api.cc`, `debugger_apitest.cc`, `extension_install_dialog_view.cc`, `extension_uninstall_dialog_view.cc`.
-
-*   **WebRTC (`webrtc.md`):** The significant reward for `audio_debug_recordings_handler.cc` ($30,000) points to vulnerabilities in media handling. Focus on data stream integrity, media sanitization, and real-time communication security. Also, pay close attention to the `media_audio_debug_recordings_handler.md`, `media_web_contents_video_capture_device.md`, and `media_stream_dispatcher_host.md` pages. Relevant files include: `audio_debug_recordings_handler.cc`, `web_contents_display_observer_view.cc`, `media_router_dialog_controller_views.cc`, `tab_sharing_ui_views.cc`.
-
-*   **Blink (`blink_layout.md`, `blink_frame.md`, `blink_core.md`):** The large number of rewarded files in the Blink components suggests a wide range of potential vulnerabilities. Focus on JavaScript execution, DOM manipulation, and cross-origin resource loading. Relevant files include: `html_canvas_element.cc`, `html_portal_element.cc`, `html_document_parser.cc`, `html_media_element.cc`, `html_iframe_element.cc`.
-
-*   **Network (`disk_cache.md`, `quic.md`, `websockets.md`, `http.md`):**  The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling. Focus on protocol handling, cookie handling, and caching mechanisms. Also, pay close attention to the `http.md` page. Relevant files include: `network_context.h`, `http_cache_transaction.cc`, `websocket_channel.h`.
+*   **WebRTC (`webrtc.md`):** The significant reward for `audio_debug_recordings_handler.cc` ($30,000) points to vulnerabilities in media handling. Focus on data stream integrity, media sanitization, and real-time communication security. Also, pay close attention to the `media_audio_debug_recordings_handler.md`, `media_web_contents_video_capture_device.md`, and `media_stream_dispatcher_host.md` pages. Relevant files include: `audio_debug_recordings_handler.cc`, `web_contents_display_observer_view.cc`, `media_router_dialog_controller_views.cc`, `tab_sharing_ui_views.cc`, `content/browser/media/capture/web_contents_video_capture_device.cc`.
 
 *   **DevTools (`devtools.md`, `devtools_ui_bindings.md`):** The high rewards for `devtools_browsertest.cc` ($22,250) and `devtools_ui_bindings.cc` ($7,000) highlight the importance of secure DevTools implementation. Focus on unauthorized access, data leakage, command injection, and XSS vulnerabilities. Relevant files include: `devtools_browsertest.cc`, `devtools_ui_bindings.cc`.
 
+*   **Payments (`payments.md`):** The substantial reward for `payment_request_sheet_controller.cc` ($16,326) indicates vulnerabilities in payment handling. Prioritize secure communication, data encryption, and data storage. Relevant files include: `payment_request_sheet_controller.cc`, `payment_request_dialog_view.cc`.
+
+*   **Network (`disk_cache.md`, `http.md`, `quic.md`, `websockets.md`):** The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling. Focus on protocol handling, cookie handling, and caching mechanisms. Also, pay close attention to the `http.md` page. Relevant files include: `network_context.h`, `http_cache_transaction.cc`, `net/http/http_cache_transaction.cc`.
+
+*   **Extensions (`extension_security.md`, `extensions_debugger_api.md`, `extensions_tabs_api.md`, `extensions_web_request_api.md`, `extensions_webrtc_audio_private_api.md`):** High rewards for `tabs_api.cc` ($14,604) and `debugger_apitest.cc` ($15,309) highlight vulnerabilities in extension APIs and debugging. Focus on the permission model, sandbox bypasses, and API vulnerabilities. Also, pay close attention to the `extensions_web_request_api.md`, `extensions_debugger_api.md`, `extensions_tabs_api.md`, and `extensions_webrtc_audio_private_api.md` pages. Relevant files include: `tabs_api.cc`, `debugger_apitest.cc`, `extension_install_dialog_view.cc`, `extension_uninstall_dialog_view.cc`.
+
+*   **Site Isolation (`site_isolation.md`):** Thoroughly investigate the core components of site isolation, including `UrlInfo` (`url_info.md`), `SiteInfo` (`site_info.md`), `SiteInstance` (`site_instance.md`), `SiteInstanceGroup` (`site_instance_group.md`), and `RenderProcessHost` (`render_process_host.md`) classes, as well as the `NavigationRequest` (`navigation_request.md`) and `ChildProcessSecurityPolicyImpl` (`child_process_security_policy_impl.md`) classes, for potential logic errors that could compromise site isolation. Relevant files include: `render_process_host.md`, `url_info.md`, `site_info.md`, `site_instance.md`, `child_process_security_policy_impl.md`.
+
+*   **Blink (`blink_core.md`, `blink_frame.md`, `blink_layout.md`):** The large number of rewarded files in the Blink components suggests a wide range of potential vulnerabilities. Focus on JavaScript execution, DOM manipulation, and cross-origin resource loading. Relevant files include: `html_canvas_element.cc`, `html_portal_element.cc`, `html_document_parser.cc`, `html_media_element.cc`, `html_iframe_element.cc`.
+
+*   **Downloads (`downloads.md`):** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks. Relevant files include: `download_manager_impl.cc`, `drag_download_file.cc`, `download_target_determiner.cc`.
+
 *   **Permissions (`permissions.md`):** Investigate the permission model, focusing on how permissions are granted, stored, and enforced. Relevant files include: `permission_request_manager.cc`, `permission_prompt_impl.cc`.
+
+*   **Media (`media.md`):** Investigate vulnerabilities related to media playback, encoding, and decoding. Focus on data stream integrity and media sanitization. Relevant files include: `media_stream_devices_controller.cc`, `media_stream_capture_indicator.cc`.
 
 *   **Web Authentication (`webauthn.md`):** Focus on the security of the Web Authentication API, including the handling of credentials and the interaction with authenticators. Relevant files include: `webauthn_bubble_view.cc`, `webauthn_icon_view.cc`.
 
-*   **Media (`media.md`):** Investigate vulnerabilities related to media playback, encoding, and decoding. Focus on data stream integrity and media sanitization. Relevant files include: `media_stream_devices_controller.cc`, `media_stream_capture_indicator.cc`.
+*   **Accessibility (`accessibility.md`):** Focus on the security of accessibility features, including data handling and interaction with assistive technologies. Relevant files include: `ax_virtual_view.cc`, `ax_widget_obj_wrapper.cc`.
 
 *   **WebAssembly (`wasm.md`):** Focus on the security of WebAssembly execution, including memory safety and control flow integrity. Relevant files include: `wasm-module.cc`, `wasm-compiler.cc`.
 
@@ -84,13 +88,9 @@ Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prio
 
 *   **IndexedDB (`indexed_db.md`):** Investigate the security of IndexedDB, including data storage and access control. Relevant files include: `indexed_db_cursor.cc`, `indexed_db_transaction.cc`.
 
-*  **File System Access (`file_system_access.md`):** Investigate the security of the File System Access API, including file access and data handling. Relevant files include: `file_system_access_manager_impl.cc`, `file_system_chooser.cc`.
-
-*   **Downloads (`downloads.md`):** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks. Relevant files include: `download_manager_impl.cc`, `drag_download_file.cc`, `download_target_determiner.cc`.
+*   **File System Access (`file_system_access.md`):** Investigate the security of the File System Access API, including file access and data handling. Relevant files include: `file_system_access_manager_impl.cc`, `file_system_chooser.cc`.
 
 *   **Printing (`printing.md`):** Investigate the security of printing functionality, including data handling and communication with print services. Relevant files include: `print_render_frame_helper.cc`, `print_web_view_helper.cc`.
-
-*   **Accessibility (`accessibility.md`):** Focus on the security of accessibility features, including data handling and interaction with assistive technologies. Relevant files include: `ax_virtual_view.cc`, `ax_widget_obj_wrapper.cc`.
 
 *   **Screen Capture (`screen_capture.md`):** Investigate the security of screen capture functionality, including data handling and access control. Relevant files include: `web_contents_video_capture_device.cc`, `desktop_capture_device.cc`.
 

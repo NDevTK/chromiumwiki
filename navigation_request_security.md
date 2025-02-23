@@ -42,6 +42,40 @@ The `NavigationRequest` handles redirects and cross-origin navigations, ensuring
 -   The impact of incorrect origin handling on cross-origin communication and data access.
 -   The role of `NavigationRequest` in preventing cross-site scripting (XSS) and other web security vulnerabilities.
 
+## Analysis of `OnRequestRedirected` method
+
+The `OnRequestRedirected` method in `navigation_request.cc` is crucial for handling security during redirects. Here's an analysis of its security aspects:
+
+1.  **URL Validation and ChildProcessSecurityPolicy**:
+    *   The method starts by checking if the browser client `ShouldOverrideUrlLoading` on Android. This is an embedder-specific security check.
+    *   It then uses `ChildProcessSecurityPolicyImpl::GetInstance()->CanRedirectToURL` to verify if the renderer is allowed to redirect to the new URL. This is a crucial security check to prevent unauthorized redirects, especially to sensitive schemes like `javascript:`. If redirection is not allowed, the navigation fails with `net::ERR_ABORTED`. This is a positive security aspect as it prevents potential security issues arising from uncontrolled redirects.
+
+2.  **Renderer-Initiated Navigation Check**:
+    *   For renderer-initiated navigations, it additionally checks `ChildProcessSecurityPolicyImpl::GetInstance()->CanRequestURL` to ensure the source has access to the redirected URL. This adds another layer of security, especially for renderer-initiated navigations, preventing potential unauthorized resource access.
+
+3.  **COOP and COEP Enforcement**:
+    *   The method calls `coop_status_.SanitizeResponse(response_head_.get())` and `EnforceCOEP()` to enforce Cross-Origin Opener Policy (COOP) and Cross-Origin Embedder Policy (COEP) respectively. These are important security policies to control cross-origin interactions and prevent information leaks. If these policies block the redirect, the navigation fails with the corresponding `network::mojom::BlockedByResponseReason`.
+
+4.  **Navigation Timing and Parameters Update**:
+    *   The method updates navigation timings and parameters, including `redirect_chain_`, `common_params_->url`, `common_params_->method`, and `common_params_->referrer`. It also updates `commit_params_->redirect_response` and `commit_params_->redirect_infos` to keep track of the redirect history. Sanitization of referrer is also performed using `Referrer::SanitizeForRequest`.
+
+5.  **Cookie and Device Bound Session Listener Re-initialization**:
+    *   On redirection, the `cookie_change_listener_` and `device_bound_session_observer_` are re-initialized if `ShouldAddCookieChangeListener` and `ShouldAddDeviceBoundSessionObserver` return true. This is important for tracking cookie changes and device-bound session expiry for the new URL after redirection, maintaining security and privacy.
+
+6.  **Site Instance and Process Handling**:
+    *   The method computes the `SiteInstance` to be used for the redirect and retrieves its `RenderProcessHost`. This is crucial for site isolation and process management, ensuring that redirects are handled within the correct security context.
+
+**Potential Security Considerations and Further Investigation**:
+
+*   **Error Handling for Javascript URLs**: The comment mentions that redirects to `javascript:` URLs should ideally display an error page with `net::ERR_UNSAFE_REDIRECT`. However, the current implementation ignores the navigation. It might be worth investigating if displaying an error page would be a more secure and user-friendly approach, rather than silently ignoring such redirects.
+*   **Process Creation on Redirect Check**: The comment `TODO(crbug.com/388998723): The check may unintentionally create a process...` suggests a potential performance issue and possibly a security concern if process creation during security checks has unintended side effects. This could be further investigated and optimized.
+*   **COOP/COEP Enforcement**: The method correctly enforces COOP and COEP during redirects. It's important to ensure that these policies are consistently and correctly applied throughout the navigation lifecycle, including redirects.
+*   **Referrer Sanitization**: Referrer sanitization is performed, which is a good security practice to prevent leaking sensitive information in the Referer header.
+
+**Overall Assessment**:
+
+The `OnRequestRedirected` method seems to incorporate several important security checks and policy enforcements during redirect handling. It validates URLs, enforces CSP, COOP, and COEP, and handles origin and site isolation appropriately. However, the points mentioned under "Potential Security Considerations and Further Investigation" could be further explored to enhance the security and robustness of redirect handling in Chromium.
+
 ## Related Files
 
 -   `content/browser/renderer_host/navigation_request.h`

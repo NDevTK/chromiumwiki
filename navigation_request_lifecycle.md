@@ -16,6 +16,10 @@ A `NavigationRequest` goes through various states during its lifecycle:
 -   `READY_TO_COMMIT`: The browser process has asked the renderer to commit the response.
 -   `DID_COMMIT`: The response has been committed.
 -   `CANCELING`: The request is being canceled.
+     This state is entered when a `NavigationThrottle` cancels the navigation, or when a critical error occurs during the navigation process.
+     -   **Entry points**: `CANCELING` state is entered from various states like `WILL_START_REQUEST`, `WILL_REDIRECT_REQUEST`, `WILL_PROCESS_RESPONSE`, `WILL_COMMIT_WITHOUT_URL_LOADER`, and `WILL_FAIL_REQUEST`.
+     -   **During this state**: In the `CANCELING` state, the `NavigationRequest` starts the cancellation process. This involves calling `OnRequestFailedInternal` to handle the failure and potentially display an error page. It also ensures that pending subframe history navigations are canceled.
+     -   **Transitions from `CANCELING`**: The `NavigationRequest` can transition from `CANCELING` to `READY_TO_COMMIT` (in some complex scenarios), `WILL_FAIL_REQUEST` (if failure handling needs to be re-evaluated), or remain in `CANCELING` until destruction.
 -   `WILL_FAIL_REQUEST`: The request is failing. `NavigationThrottles` run the WillFailRequest event.
 -   `DID_COMMIT_ERROR_PAGE`: The request failed with a net error code and an error page should be displayed.
 

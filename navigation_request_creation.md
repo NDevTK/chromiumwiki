@@ -66,6 +66,18 @@ The creation methods take various parameters that describe the navigation, inclu
 -   `coep_reporter`: A reporter for Cross-Origin Embedder Policy violations.
 -   `http_response_code`: The HTTP response code.
 
+## Security Considerations in Creation
+
+The creation of a `NavigationRequest` is the first critical step in the navigation lifecycle from a security perspective. Several aspects during creation are crucial for ensuring secure navigations:
+
+-   **Browser-initiated vs. Renderer-initiated**: Browser-initiated navigations are generally more trusted as they originate from direct user actions. Renderer-initiated navigations, however, require more stringent security checks to prevent malicious or unexpected navigations triggered by compromised or malicious web content. Differentiating these types at creation is essential for applying appropriate security policies later in the lifecycle.
+-   **Parameter Validation**: Validating parameters during `NavigationRequest` creation is paramount. For instance, the `url`, `referrer`, and `transition` type must be validated to prevent injection of malicious URLs or manipulation of navigation behavior.
+-   **Origin and Site Isolation**: The `origin` and `SiteInfo` are determined early in the creation process. These parameters are fundamental for establishing and enforcing site isolation. Correctly setting these parameters from the outset is crucial for maintaining process separation and preventing cross-site scripting and other site isolation vulnerabilities.
+-   **Security Policy Initialization**: Security policies such as CSP, COOP, and COEP are initialized and associated with the `NavigationRequest` during its creation. Proper initialization ensures that these policies are in place and ready to be enforced throughout the navigation, starting from the initial request.
+-   **Creation Method Choice**: Choosing the appropriate creation method (`CreateBrowserInitiated`, `CreateRendererInitiated`, `CreateForSynchronousRendererCommit`) is vital for establishing the correct security context. Each method is designed for a specific navigation type and ensures that the `NavigationRequest` is set up with the appropriate security defaults and checks for that context.
+
+Ensuring these security considerations are addressed during `NavigationRequest` creation is essential for building a secure navigation process in Chromium.
+
 ## Further Investigation
 
 -   The detailed logic of each creation method and how they differ.
