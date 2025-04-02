@@ -1,106 +1,76 @@
 # Chromium Security Wiki
- 
+
 This wiki contains analysis of Chromium components and potential security vulnerabilities.
- 
-**Important Note:** Research findings should be added directly to the relevant wiki page, following the format below. Do not create separate files for research notes. **Also, please keep the security research tips below very detailed; do not shorten them.**  **Additionally, please keep the wiki page list ordered by VRP risk (highest payout first).**
- 
+
+**Important Note:** Research findings should be added directly to the relevant wiki page, following the format below. Do not create separate files for research notes. **Also, please keep the security research tips below very detailed; do not shorten them.** **Additionally, please keep the wiki page list ordered by VRP risk (highest payout first).**
+
 **Format of Each Wiki Page:**
- 
+
 Each wiki page follows a consistent format:
- 
+
 1.  **Component Focus:** The page clearly states the specific Chromium component(s) being analyzed (e.g., `content/browser/bluetooth/web_bluetooth_service_impl.cc`).
- 
 2.  **Potential Logic Flaws:** A list of potential logic flaws or vulnerabilities is provided, along with a brief description of each issue and its potential impact.
- 
 3.  **Further Analysis and Potential Issues:** This section provides a more detailed analysis of the identified issues, highlighting specific areas of concern within the codebase. Research notes, including files reviewed and key functions, are integrated here. This section also includes a summary of relevant CVEs and their connection to the discussed functionalities.
- 
 4.  **Code Analysis:** This section includes specific code snippets and observations.
- 
 5.  **Areas Requiring Further Investigation:** This section contains additional points for further investigation, identified during the analysis.
- 
-6.  **Secure Contexts and [Component Name]:** This section explains the interaction between the component's functionalities and secure contexts, highlighting the importance of secure contexts in mitigating vulnerabilities.
- 
-7.  **Privacy Implications:** This section discusses the privacy implications of the component's functionalities.
- 
-8.  **Additional Notes:** This section contains any additional relevant information or findings.
- 
-**Note:** The original `network.md` and `rendering_engine.md` files have been deleted, as their content has been split into more specific wikis. The `service_workers.md` file has been updated to remove payment-related content, which is now in `service_worker_payments.md`. The `security_headers.md` file has been split into more specific wiki pages for each security header.
- 
-**Tips for Security Researchers:**
- 
-Based on the Chromium Vulnerability Reward Program (VRP) data you provided, prioritize investigating files with high reward payouts, as these often indicate critical vulnerabilities. The data reveals several key areas for focused investigation, ordered by VRP risk (highest payout first):
- 
-*   **Tab Management:** The exceptionally high rewards for files like `tab_strip_model.cc` ($53,357) and `tabs_api.cc` ($14,604) highlight the criticality of tab management security. Focus your research on cross-origin communication, race conditions, and extension interactions. The drag-and-drop functionality within the tab strip also presents a high-risk area.
-    See the [Drag States in TabDragController](#drag-states-in-tabdragcontroller) section in [`drag_and_drop.md`](drag_and_drop.md) for more information on the different drag states and potential security implications.
-Relevant files include: `tab_strip_model.cc`, `tabs_api.cc`, `chrome/browser/ui/views/tabs/dragging/tab_drag_controller.cc`. See the wiki pages: [`tabs.md`](tabs.md) and [`drag_and_drop.md`](drag_and_drop.md).
- 
-*   **Autofill:** The extremely high reward for `autofill_popup_controller_impl.cc` ($52,544) points to significant vulnerabilities in the autofill popup. Concentrate on data sanitization, data persistence, and form submission. Relevant files include: `autofill_popup_controller_impl.cc`, `chrome/browser/ui/autofill/chrome_autofill_client.cc`. See the wiki page: [`autofill.md`](autofill.md).
-    *   **Address Validation:** Investigate address validation mechanisms, including state name validation, zip code validation, and address rewriting, to identify potential vulnerabilities in input validation and data handling.
- 
-*   **WebRTC:** The significant reward for `audio_debug_recordings_handler.cc` ($30,000) points to vulnerabilities in media handling. Focus on data stream integrity, media sanitization, and real-time communication security. Also, pay close attention to the `media_audio_debug_recordings_handler.md`, `media_web_contents_video_capture_device.md`, and `media_stream_dispatcher_host.md` pages. Relevant files include: `audio_debug_recordings_handler.cc`, `web_contents_display_observer_view.cc`, `media_router_dialog_controller_views.cc`, `tab_sharing_ui_views.cc`, `content/browser/media/capture/web_contents_video_capture_device.cc`. See the wiki page: [`webrtc.md`](webrtc.md).
- 
-*   **DevTools:** The high rewards for `devtools_browsertest.cc` ($22,250) and `devtools_ui_bindings.cc` ($7,000) highlight the importance of secure DevTools implementation. Focus on unauthorized access, data leakage, command injection, and XSS vulnerabilities. Relevant files include: `devtools_browsertest.cc`, `devtools_ui_bindings.cc`. See the wiki pages: [`devtools.md`](devtools.md) and [`devtools_ui_bindings.md`](devtools_ui_bindings.md).
- 
-*   **Extensions:** High rewards for `debugger_apitest.cc` ($15,309) and `tabs_api.cc` ($14,604) highlight vulnerabilities in extension APIs and debugging. Focus on the permission model, sandbox bypasses, and API vulnerabilities. Also, pay close attention to the `extensions_web_request_api.md`, `extensions_debugger_api.md`, `extensions_tabs_api.md`, and `extensions_webrtc_audio_private_api.md` pages. Relevant files include: `debugger_apitest.cc`, `tabs_api.cc`, `extension_install_dialog_view.cc`, `extension_uninstall_dialog_view.cc`. See the wiki pages: [`extension_security.md`](extension_security.md), [`extensions_debugger_api.md`](extensions_debugger_api.md), [`extensions_tabs_api.md`](extensions_tabs_api.md), [`extensions_web_request_api.md`](extensions_web_request_api.md), and [`extensions_webrtc_audio_private_api.md`](extensions_webrtc_audio_private_api.md).
- 
-*   **Payments:** The substantial reward for `payment_request_sheet_controller.cc` ($16,326) indicates vulnerabilities in payment handling. Prioritize secure communication, data encryption, and data storage. Relevant files include: `payment_request_sheet_controller.cc`, `payment_request_dialog_view.cc`. See the wiki pages: [`payments.md`](payments.md) and [`payment_request_dialog_view_security.md`](payment_request_dialog_view_security.md).
- 
-*   **Network:** The high reward for `network_context.h` ($16,000) suggests vulnerabilities in network handling. Focus on protocol handling, cookie handling, and caching mechanisms. Also, pay close attention to the `http.md` page. Relevant files include: `network_context.h`, `http_cache_transaction.cc`, `net/http/http_cache_transaction.cc`. See the wiki pages: [`disk_cache.md`](disk_cache.md), [`http.md`](http.md), [`quic.md`](quic.md), and [`websockets.md`](websockets.md).
- 
-*   **Site Isolation:** Thoroughly investigate the core components of site isolation, including `UrlInfo` (`url_info.md`), `SiteInfo` (`site_info.md`), `SiteInstance` (`site_instance.md`), `SiteInstanceGroup` (`site_instance_group.md`), and `RenderProcessHost` (`render_process_host.md`) classes, as well as the `NavigationRequest` (`navigation_request.md`) and `ChildProcessSecurityPolicyImpl` (`child_process_security_policy_impl.md`) classes, for potential logic errors that could compromise site isolation. Relevant files include: `site_info.md`, `url_info.md`, `site_instance.md`, `site_instance_group.md`, `render_process_host.md`, `navigation_request.md`, `child_process_security_policy_impl.md`. See the wiki page: [`site_isolation.md`](site_isolation.md).
- 
-*   **Blink:** The large number of rewarded files in the Blink components suggests a wide range of potential vulnerabilities. Focus on JavaScript execution, DOM manipulation, and cross-origin resource loading. Relevant files include: `html_canvas_element.cc`, `html_portal_element.cc`, `html_document_parser.cc`, `html_media_element.cc`, `html_iframe_element.cc`. See the wiki pages: [`blink_core.md`](blink_core.md), [`blink_frame.md`](blink_frame.md), and [`blink_layout.md`](blink_layout.md).
- 
-*   **Downloads:** High rewards associated with download management highlight the importance of secure file handling and resource management. Focus on file type validation, download path sanitization, and resource leaks. Relevant files include: `download_manager_impl.cc`, `drag_download_file.cc`, `download_target_determiner.cc`. See the wiki page: [`downloads.md`](downloads.md).
- 
-*   **Permissions:** Investigate the permission model, focusing on how permissions are granted, stored, and enforced. Relevant files include: `permission_request_manager.cc`, `permission_prompt_impl.cc`. See the wiki page: [`permissions.md`](permissions.md).
- 
-*   **Media:** Investigate vulnerabilities related to media playback, encoding, and decoding. Focus on data stream integrity and media sanitization. Relevant files include: `media_stream_devices_controller.cc`, `media_stream_capture_indicator.cc`. See the wiki page: [`media.md`](media.md).
- 
-*   **Web Authentication:** Focus on the security of the Web Authentication API, including the handling of credentials and the interaction with authenticators. Relevant files include: `webauthn_bubble_view.cc`, `webauthn_icon_view.cc`. See the wiki page: [`webauthn.md`](webauthn.md).
- 
-*   **Accessibility:** Focus on the security of accessibility features, including data handling and interaction with assistive technologies. Relevant files include: `ax_virtual_view.cc`, `ax_widget_obj_wrapper.cc`. See the wiki page: [`accessibility.md`](accessibility.md).
- 
-*   **WebAssembly:** Focus on the security of WebAssembly execution, including memory safety and control flow integrity. Relevant files include: `wasm-module.cc`, `wasm-compiler.cc`. See the wiki page: [`wasm.md`](wasm.md).
- 
-*   **User Notes:** Investigate the security of user note storage and retrieval, focusing on data integrity and access control. Relevant files include: `user_note_service.cc`, `user_note_utils.cc`. See the wiki page: [`user_notes.md`](user_notes.md).
- 
-*   **Web Share:** Investigate the security of the Web Share API, focusing on data sanitization and origin handling. Relevant files include: `sharing_dialog_view.cc`, `share_operation.cc`. See the wiki page: [`webshare.md`](webshare.md).
- 
-*   **Web Bluetooth:** Focus on the security of the Web Bluetooth API, including device pairing and data transfer. Relevant files include: `web_bluetooth_service_impl.cc`, `bluetooth_chooser_controller.cc`. See the wiki page: [`bluetooth.md`](bluetooth.md).
- 
-*   **Web USB:** Investigate the security of the Web USB API, including device access and data transfer. Relevant files include: `usb_chooser_context.cc`, `usb_chooser_controller.cc`. See the wiki page: [`webusb.md`](webusb.md).
- 
-*   **Web Serial:** Focus on the security of the Web Serial API, including device access and data transfer. Relevant files include: `serial_port_underlying_sink.cc`, `serial.cc`. See the wiki page: [`webserial.md`](webserial.md).
- 
-*   **Web Codecs:** Investigate the security of the Web Codecs API, including encoding and decoding vulnerabilities. Relevant files include: `image_decoder_external.cc`, `video_encoder.cc`. See the wiki page: [`webcodecs.md`](webcodecs.md).
- 
-*   **WebGPU:** Focus on the security of the WebGPU API, including memory management and shader execution. Relevant files include: `gpu_buffer.cc`, `gpu_device.cc`. See the wiki page: [`webgpu.md`](webgpu.md).
- 
-*   **WebXR:** Investigate the security of the WebXR API, including device access and data handling. Relevant files include: `xr_session.cc`, `xr_device.cc`. See the wiki page: [`webxr.md`](webxr.md).
- 
-*   **Payment Handler:** Focus on the security of the Payment Handler API, including secure communication and data handling. Relevant files include: `payment_handler_web_flow_view_controller.cc`, `payment_handler_modal_dialog_manager_delegate.cc`. See the wiki page: [`payment_handler.md`](payment_handler.md).
- 
-*   **Background Fetch:** Investigate the security of the Background Fetch API, including data persistence and resource management. Relevant files include: `background_fetch_job_controller.cc`, `background_fetch_delegate_proxy.cc`. See the wiki page: [`background_fetch.md`](background_fetch.md).
- 
-*   **Background Sync:** Focus on the security of the Background Sync API, including data synchronization and resource management. See the wiki page: [`background_sync.md`](background_sync.md).
- 
-*   **Push Messaging:** Investigate the security of the Push Messaging API, including message handling and data security. Relevant files include: `push_messaging_manager.cc`. See the wiki page: [`push_messaging.md`](push_messaging.md).
- 
-*   **Optimization Guide Architecture:** Documentation for the Optimization Guide architecture and key components. See the [`optimization_guide_architecture.md`](optimization_guide_architecture.md) page for more information.
- 
-*   **Web Share:** Investigate the security of the Web Share API, focusing on data sanitization and origin handling. Relevant files include: `sharing_dialog_view.cc`, `share_operation.cc`. See the wiki page: [`webshare.md`](webshare.md).
- 
-*   **Web Bluetooth (`bluetooth.md`):** Focus on the security of the Web Bluetooth API, including device pairing and data transfer. Relevant files include: `bluetooth.md`, `web_bluetooth_service_impl.cc`, `bluetooth_chooser_controller.cc`.
- 
-*   **Web USB (`webusb.md`):** Investigate the security of the Web USB API, including device access and data transfer. Relevant files include: `webusb.md`, `usb_chooser_context.cc`, `usb_chooser_controller.cc`.
- 
-*   **Web Serial (`webserial.md`):** Focus on the security of the Web Serial API, including device access and data transfer. Relevant files include: `webserial.md`, `serial_port_underlying_sink.cc`, `serial.cc`.
- 
-*   **Web Codecs (`webcodecs.md`):** Investigate the security of the Web Codecs API, including encoding and decoding vulnerabilities. Relevant files include: `webcodecs.md`, `image_decoder_external.cc`, `video_encoder.cc`.
- 
-*   **WebGPU (`webgpu.md`):** Focus on the security of the WebGPU API, including memory management and shader execution. Relevant files include: `webgpu.md`, `gpu_buffer.cc`, `gpu_device.cc`.
- 
-*   **WebXR (`webxr.md`):** Investigate the security of the WebXR API, including device access and data handling. Relevant files include: `webxr.md`, `xr_session.cc`, `xr_device.cc`.
- 
-*   **User Notes (`user_notes.md`):** Investigate the security of user note storage and retrieval, focusing on data integrity and access control. Relevant files include: `user_notes.md`, `user_note_service.cc`, `user_note_utils.cc`.
+
+## Wiki Pages (Ordered by VRP Risk - Highest Payout First)
+
+This list prioritizes components based on the highest known VRP reward amounts paid for vulnerabilities within them. Focus your research on higher-ranked components first. (Filenames updated to match existing wiki files where possible).
+
+* **Chromium > Internals > Sandbox > SiteIsolation (`site_isolation.md`)**: Highest associated VRP award: $20,000. Focus on origin confusion (especially with `javascript:`/`data:` URLs), cross-origin interactions in iframes/windows, and sandbox escape vectors.
+* **Chromium > Mobile > WebView (`android_webview_app_defined_websites.md`?)**: Highest associated VRP award: $15,000. Investigate interactions between iframes and the top document, particularly regarding JavaScript execution (`window.open()`, `target="_blank"`) and navigation on Android. *(Filename is a guess based on available list)*
+* **Chromium > UI > Browser > Autofill > Payments (`payments.md`)**: Highest associated VRP award: $10,000. Analyze input methods (taps, EyeDropper API) and timing conditions that could bypass autofill security prompts for payment information. *(Using general payments.md)*
+* **Chromium > UI > Browser > Omnibox (`omnibox.md`)**: Highest associated VRP award: $8,500. Focus on URL display logic, spoofing vulnerabilities (especially on mobile with schemes later in URL or long `blob:` URLs), and interaction with page content.
+* **Chromium > UI > Mojo (`mojo.md`)**: Highest associated VRP award: $7,500. Examine MojoJS bindings, especially how they are enabled/disabled across navigations initiated from WebUI pages.
+* **Chromium > Extensions (`extension_security.md`)**: Highest associated VRP award: $7,000+. Investigate permissions models, interaction with DevTools APIs (`chrome.devtools.inspectedWindow.reload`), policy manipulation (`chrome://policy`), and potential sandbox escapes (especially via DevTools or insufficient checks). *(Using extension_security.md)*
+* **Chromium > UI > Browser > PictureInPicture (`picture_in_picture.md`)**: Highest associated VRP award: $7,000. Analyze overlay behavior, state management across page reloads, and potential for UI redressing or clickjacking, especially related to permission prompts.
+* **Chromium > Internals > Downloads (`downloads.md`)**: Highest associated VRP award: $5,000. Examine file handling, security prompts for downloads, and interactions with the renderer process (e.g., drag operations like `StartDragging`).
+* **Chromium > UI > Browser > Autofill (`autofill.md`)**: Highest associated VRP award: $5,000. Investigate general autofill logic, popup visibility, interaction with keyboard/mouse/touch inputs (e.g., space key), and bypasses for user interaction requirements.
+* **Chromium > UI > Browser > WebApps (`web_app_identity.md`?)**: Highest associated VRP award: $5,000. Focus on PWA installation dialogs, origin display, and potential for spoofing or misrepresentation. *(Filename is a guess based on available list)*
+* **Chromium > Blink > Forms > Autofill (`autofill.md`?)**: Highest associated VRP award: $5,000. Analyze the Blink-level implementation of autofill, focusing on data handling and interaction with form elements. *(Potentially overlaps with main autofill.md)*
+* **Chromium > Internals > Network > DNS (`host_resolution.md`?)**: Highest associated VRP award: $3,000. Investigate DNS cache management, resource exhaustion vulnerabilities, and potential for cache poisoning. *(Filename is a guess based on available list)*
+* **Chromium > Blink > Loader (`blink_core.md`?)**: Highest associated VRP award: $3,000. Examine resource loading mechanisms, handling of different URI schemes (e.g., `blob:`, `filesystem:`), and CSP inheritance. *(Filename is a guess based on available list)*
+* **Chromium > Blink > HTML > Parser (`blink_core.md`?)**: Highest associated VRP award: $3,000. Focus on parsing edge cases, namespace handling (HTML vs. MathML vs. SVG), and potential for script execution through malformed markup. *(Filename is a guess based on available list)*
+* **Chromium > UI > Browser > EyeDropper (`eye_dropper.md`)**: Highest associated VRP award: $3,000. Analyze how the EyeDropper API interacts with other browser features like autofill and potential bypasses of security measures.
+* **Chromium > Blink > Storage > FileSystem (`file_system_access.md`)**: Highest associated VRP award: $3,000. Investigate filesystem API access controls, URI handling, and potential for origin confusion or information leaks.
+* **Chromium > Blink > Paint (`blink_layout.md`?)**: Highest associated VRP award: $3,000. Examine CSS rendering, paint operations (`registerPaint`), timing attacks, and potential for information leaks (e.g., visited links). *(Filename is a guess based on available list)*
+* **Chromium > Blink > CSS (`blink_layout.md`?)**: Highest associated VRP award: $3,000. Focus on CSS parsing and rendering, potential for denial of service, or information leaks through style application timing. *(Filename is a guess based on available list)*
+* **Chromium > UI > Browser > SafeBrowsing (`safe_browsing_service.md`)**: Highest associated VRP award: $2,000. Analyze security interstitial bypasses, interaction with DevTools, and handling of potentially malicious URLs.
+* **Chromium > Install / Enterprise (`policy.md`?)**: Highest associated VRP award: >$1,000. Investigate installer mechanisms (MSI repair), update processes (`GoogleUpdate.exe`), temporary file handling, permissions during installation/updates, and potential for privilege escalation. (Derived from VRP2 data) *(Filename is a guess based on available list)*
+* **Chromium > DevTools (`devtools.md`)**: Highest associated VRP award: >$1,000. Examine DevTools API permissions (`inspectedWindow.reload`, `debugger`), interaction with privileged pages (Web Store, `chrome://`), and potential for sandbox escapes or unauthorized actions. (Derived from VRP2 data)
+* **Chromium > Internals > Sandbox / Renderer (`render_process_host_security.md`)**: Highest associated VRP award: >$1,000. Focus on Mojo IPC interfaces callable from the renderer (e.g., `StartDragging`), input handling (mouse events), and potential for sandbox escapes via compromised renderers. (Derived from VRP2 data)
+* **Chromium > UI > Browser > Navigation (`navigation_request_security.md`)**: Highest associated VRP award: $1,000. Analyze navigation timing, address bar hiding/spoofing conditions (especially slow navigations), and state management.
+* **Chromium > UI > Browser > TopChrome > SidePanel (`user_notes.md`)**: Highest associated VRP award: $1,000. Investigate features within the side panel (e.g., User Notes/Annotations) for memory safety issues like use-after-free in `observer_list.h`.
+* **Chromium > Blink > WebShare (`webshare.md`)**: Highest associated VRP award: $1,000. Analyze the share dialog implementation, potential for UI redressing or overlaying other browser elements (address bar, window controls).
+* **Chromium > Internals > Plugins > PDF (`plugin_security.md`?)**: Highest associated VRP award: $500. Examine PDFium interactions, thumbnail generation (`getThumbnail`), and potential information leaks (e.g., page count). *(Filename is a guess based on available list)*
+
+*Note: Some components from the original README version (like Web Bluetooth, Web USB, etc.) did not have specific high-value VRP entries identified in the provided data and are therefore not prioritized in the list above. Research can still be conducted in those areas, and specific focus points are detailed below.*
+
+## Additional Component Focus Areas (Lower VRP Priority)
+
+These components were listed in the original research wiki but did not rank highly based on the provided VRP data. However, they remain areas for potential investigation.
+
+* **Web Bluetooth (`bluetooth.md`):** Focus on the security of the Web Bluetooth API, including device pairing and data transfer. Relevant files include: `bluetooth.md`, `content/browser/bluetooth/web_bluetooth_service_impl.cc`, `chrome/browser/ui/views/bluetooth/bluetooth_chooser_controller.cc`.
+* **Web USB (`webusb.md`):** Investigate the security of the Web USB API, including device access controls and data transfer. Relevant files include: `webusb.md`, `content/browser/usb/usb_chooser_context.cc`, `chrome/browser/ui/views/usb/usb_chooser_controller.cc`.
+* **Web Serial (`webserial.md`):** Focus on the security of the Web Serial API, including device access controls and data transfer integrity. Relevant files include: `webserial.md`, `content/browser/serial/serial_port_underlying_sink.cc`, `third_party/blink/renderer/modules/serial/serial.cc`.
+* **Web Codecs (`webcodecs.md`):** Investigate the security of the Web Codecs API, including vulnerabilities in encoding/decoding complex or malformed media streams. Relevant files include: `webcodecs.md`, `third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc`, `third_party/blink/renderer/modules/webcodecs/video_encoder.cc`.
+* **WebGPU (`webgpu.md`):** Focus on the security of the WebGPU API, including memory management in the GPU process, shader execution sandboxing, and potential timing attacks. Relevant files include: `webgpu.md`, `gpu/command_buffer/service/webgpu_decoder.cc`, `third_party/dawn/src/dawn/native/Device.cpp`. *(File paths adjusted for common locations)*
+* **WebXR (`webxr.md`):** Investigate the security of the WebXR API, including device access permissions, sensor data handling, and rendering isolation. Relevant files include: `webxr.md`, `content/browser/xr/service/xr_session.cc`, `device/vr/public/mojom/vr_service.mojom`. *(File paths adjusted for common locations)*
+
+## General Security Research Tips
+
+* **Fuzzing:** Use fuzzers like libFuzzer to test APIs and file parsers for unexpected inputs that might cause crashes or reveal vulnerabilities. Focus on complex formats or stateful interactions.
+* **Code Review:** Manually review code changes, especially those related to security boundaries (IPC, process isolation), permission checks, and input validation. Look for common pitfalls like TOCTOU (Time-of-check to time-of-use) bugs, integer overflows, use-after-free, and incorrect origin checks.
+* **Variant Analysis:** When a vulnerability is found, search the codebase for similar patterns or logic flaws in related components. Tools like CodeQL can be helpful here.
+* **Exploit Techniques:** Study public exploit techniques for browser vulnerabilities. Understanding how exploits work can help identify potentially exploitable bugs during code review or fuzzing. Pay attention to heap manipulation, ROP chains, JIT spraying, and sandbox escape methods.
+* **IPC/Mojo Analysis (VRP Pattern):** Deeply analyze Inter-Process Communication (IPC) messages, **especially Mojo interfaces**, handled by the browser process, GPU process, and utility processes. Look for messages/interfaces callable from less privileged contexts (renderer, extensions) that lack sufficient validation. Pay close attention to interfaces that handle file system access, simulate user input (like `StartDragging` with specific parameters), interact with privileged UI, manage permissions, or interact with DevTools APIs (`chrome.devtools.inspectedWindow.reload`, `debugger`). Insufficient checks here are a common source of sandbox escapes and privilege escalation.
+* **Web Platform Features:** Investigate newer or complex web platform features (WebTransport, WebCodecs, WebGPU, WebXR, Fenced Frames, etc.). These areas often receive less scrutiny initially and might contain design or implementation flaws.
+* **Permission Prompts & UI Security (VRP Pattern):** Examine how permission prompts, security interstitials, the address bar (Omnibox), and other critical UI elements are displayed and managed. Look for ways to spoof, obscure, or bypass these elements. **Common patterns seen in VRP data include:** address bar spoofing (especially on mobile using long URLs, `blob:` origins, or schemes placed later in the URL), UI element overlay/redressing (e.g., Picture-in-Picture windows or Share dialogs obscuring prompts or controls), dialog spoofing (e.g., PWA install prompts misrepresenting origin), and state management flaws where UI state isn't reset correctly across navigations or reloads.
+* **Origin Checks & Inheritance (VRP Pattern):** Pay extremely close attention to how origins are calculated, compared, and inherited, **especially across different contexts and boundaries**. **VRP data highlights issues with:** special URL schemes (`javascript:`, `data:`, `blob:`, `filesystem:`), interactions between cross-origin iframes and parent windows (`window.open`, `target="_blank"`), navigations from privileged WebUI pages to web pages (potentially inheriting bindings like MojoJS), and insufficient checks in resource loading or CSP inheritance for schemes like `blob:` or `filesystem:`. Incorrect origin handling is a frequent source of high-severity bugs.
+* **Memory Safety (VRP Pattern):** Look for memory corruption bugs (buffer overflows, use-after-free, type confusion) in C++ components. While applicable everywhere, **VRP data points to specific instances like Use-After-Free in observer lists (`observer_list.h`) triggered by complex feature interactions (e.g., Annotations/Notes in SidePanel)** or occurring after specific events like crashes. Focus on areas handling untrusted input (media parsers, font renderers, network stack) and complex object lifetimes/callbacks.
+* **Cross-Component Interaction & Logic Flaws (VRP Pattern):** Analyze how different browser components interact and look for logic flaws within specific features. **VRP data shows recurring issues in complex features like Autofill (bypassing user interaction requirements via specific inputs like taps/keys, or interaction with other APIs like EyeDropper), Downloads (interaction with renderer IPC like `StartDragging`), Extensions/DevTools (API permission flaws), PDFium integration (`getThumbnail` leaks), and Installation/Updates (privilege escalation via MSI repair).** Deeply understanding a feature's intended logic and edge cases is critical.
+* **Input Handling & Timing Attacks (VRP Pattern):** Investigate how the browser handles user input and timing-sensitive operations. **VRP data reveals vulnerabilities related to:** bypassing security measures with specific input sequences (e.g., consecutive taps, specific key presses like 'space' for Autofill), timing attacks leaking cross-origin information (e.g., paint status via `registerPaint`), and misuse of APIs that simulate or handle input events (e.g., `StartDragging` with touch events to control the mouse).
+* **Information Leaks (VRP Pattern):** Actively look for ways browser features might unintentionally expose sensitive or cross-origin information. **Examples from VRP include:** timing attacks leaking paint status, or API responses revealing internal state (like PDF page count via `getThumbnail`). Check API responses, side channels (timing, cache states), and error messages.
+* **Mobile-Specific Issues (VRP Pattern):** Test specifically on Android and iOS. Mobile platforms have different UI paradigms, WebView interactions, and platform APIs that can lead to unique vulnerabilities. **VRP data highlights mobile-specific issues like address bar spoofing variations and WebView iframe interaction bugs.**
+* **Enterprise Features & Policies (VRP Pattern):** Examine features specific to enterprise deployments and the application of enterprise policies. **VRP data shows potential for privilege escalation via installer/updater mechanisms (e.g., MSI repair).** Misconfigurations or flaws in policy enforcement can sometimes lead to security issues.
