@@ -24,60 +24,69 @@ Each wiki page follows a consistent format:
 
 **General Security Research Tips (Informed by VRP Data):**
 
-*   **Fuzzing:** Use fuzzers like libFuzzer to test APIs and file parsers for unexpected inputs that might cause crashes or reveal vulnerabilities. Focus on complex formats or stateful interactions.
-*   **Code Review:** Manually review code changes, especially those related to security boundaries (IPC, process isolation), permission checks, and input validation. Look for common pitfalls like TOCTOU (Time-of-check to time-of-use) bugs, integer overflows, use-after-free, and incorrect origin checks.
-*   **Variant Analysis:** When a vulnerability is found, search the codebase for similar patterns or logic flaws in related components. Tools like CodeQL can be helpful here.
-*   **Exploit Techniques:** Study public exploit techniques for browser vulnerabilities. Understanding how exploits work can help identify potentially exploitable bugs during code review or fuzzing. Pay attention to heap manipulation, ROP chains, JIT spraying, and sandbox escape methods.
-*   **IPC/Mojo Analysis (High Likelihood):** Deeply analyze Inter-Process Communication (IPC) messages, especially Mojo interfaces, handled by the browser process, GPU process, and utility processes. Look for messages/interfaces callable from less privileged contexts (renderer, extensions) that lack sufficient validation. Pay close attention to interfaces that handle file system access, simulate user input (like `StartDragging` with specific parameters), interact with privileged UI, manage permissions, or interact with DevTools APIs (`chrome.devtools.inspectedWindow.reload`, `debugger`). Insufficient checks here are a common source of sandbox escapes and privilege escalation. Relevant files include: `mojo/public/interfaces/bindings/native_struct.mojom`, `mojo/public/cpp/bindings/message.h`, `mojo/core/node_channel.cc`.
-*   **Web Platform Features:** Investigate newer or complex web platform features (WebTransport, WebCodecs, WebGPU, WebXR, Fenced Frames, etc.). These areas often receive less scrutiny initially and might contain design or implementation flaws.
-*   **Permission Prompts & UI Security (High Likelihood):** Examine how permission prompts, security interstitials, the address bar (Omnibox), and other critical UI elements are displayed and managed. Look for ways to spoof, obscure, or bypass these elements. **Common patterns seen in VRP data include:** address bar spoofing (especially on mobile using long URLs, `blob:` origins, or schemes placed later in the URL), UI element overlay/redressing (e.g., Picture-in-Picture windows or Share dialogs obscuring prompts or controls), dialog spoofing (e.g., PWA install prompts misrepresenting origin), and state management flaws where UI state isn't reset correctly across navigations or reloads.
-*   **Origin Checks & Inheritance (High Likelihood):** Pay extremely close attention to how origins are calculated, compared, and inherited, **especially across different contexts and boundaries**. **VRP data highlights issues with:** special URL schemes (`javascript:`, `data:`, `blob:`, `filesystem:`), interactions between cross-origin iframes and parent windows (`window.open`, `target="_blank"`), navigations from privileged WebUI pages to web pages (potentially inheriting bindings like MojoJS), and insufficient checks in resource loading or CSP inheritance for schemes like `blob:` or `filesystem:`. Incorrect origin handling is a frequent source of high-severity bugs.
-*   **Analyze complex features and their interactions:** Many vulnerabilities arise from the complex interactions between different parts of the codebase. Pay close attention to how different components interact and look for logic flaws that might arise in these interactions.
-*   **Consider user interaction as a vulnerability vector:** User interaction can be manipulated to bypass security measures. Analyze how user actions, such as clicks, key presses, and touch gestures, can be used to trigger unintended behavior or bypass security checks.
-*   **Test on mobile platforms:** Mobile platforms have different UI paradigms and platform APIs that can lead to unique vulnerabilities. Be sure to test your exploits on mobile devices to uncover these types of issues.
-*   **Analyze the interaction between UI elements and security prompts:** Pay close attention to how UI elements, such as permission prompts and the address bar, interact with each other. Look for ways to obscure or spoof these elements to trick the user into performing unintended actions.
-*   **When analyzing UI-related vulnerabilities, consider the impact of custom cursors:** Custom cursors can be used to overlay and obscure parts of the browser UI, potentially leading to clickjacking or other attacks.
-*   **Be aware of potential issues with the EyeDropper API:** The EyeDropper API, while useful for legitimate purposes, can also be abused to bypass security checks and obtain sensitive information.
-*   **Be aware of tap-based attacks:** Tap-based attacks can bypass some of the mitigations that are in place for mouse-based attacks, requiring more robust input validation.
-*   **Investigate potential bypasses for input field cache protections:** The protection of input fields cache can be bypassed, allowing attackers to steal cached data.
-*   **When analyzing extension-related vulnerabilities, consider the impact of the chrome.debugger API:** The chrome.debugger API can be a powerful tool for attackers, allowing them to bypass security restrictions and access sensitive information.
-*   **Carefully validate extension interactions with privileged APIs:** Extensions vulnerabilities often involve the misuse of privileged APIs, such as the DevTools API and the tabs API. Carefully validate extension interactions with these APIs to prevent unauthorized access and privilege escalation.
-*   **Consider how extensions can be used to bypass security policies:** Extensions can be used to bypass security policies, such as the runtime\_blocked\_hosts policy and CSP. Be aware of this potential attack vector and look for ways to prevent extensions from circumventing these policies.
-*   **Analyze the interaction between extensions and the back-forward cache:** The back-forward cache can introduce new vulnerabilities related to extensions. Analyze this interaction and look for ways to compromise the security of the extension sandbox.
-*   **When analyzing Picture-in-Picture vulnerabilities, consider the potential for UI element occlusion:** Picture-in-Picture windows can be used to obscure other UI elements, such as permission prompts and autofill prompts, leading to clickjacking or other attacks.
-*   **Be aware of the potential for spoofing the origin in Picture-in-Picture windows:** The origin displayed in Picture-in-Picture windows can be spoofed, potentially leading users to trust malicious content.
-*   **When analyzing permission-related vulnerabilities, consider the potential for PEPC prompt obscuration:** The Page Embedded Permission Control (PEPC) prompt can be obscured by other UI elements, such as Picture-in-Picture windows, leading to unintended permission grants.
-*   **Be aware of tapjacking attacks on permission prompts:** Tapjacking attacks can be used to trick users into granting permissions on Android, even when the prompt is not fully visible.
-*   **When analyzing UI-related vulnerabilities, consider the impact of different UI contexts:** Some vulnerabilities may only be exploitable in specific UI contexts, such as Android WebView or Chrome OS. Be sure to test your exploits in different UI contexts to uncover these types of issues.
-*   **Pay close attention to UI spoofing vulnerabilities:** UI spoofing is a common attack vector in Chromium. Carefully analyze UI elements and look for ways to manipulate their appearance or behavior to mislead users.
-*   **Validate data used in UI elements:** Improper validation of data used in UI elements, such as dialog titles and button labels, can lead to injection attacks and other vulnerabilities. Ensure that all data used in UI elements is properly validated and sanitized.
-*   **Thoroughly test SameSite cookie handling:** SameSite cookie handling can be complex and prone to errors, especially in scenarios involving cross-origin requests, service workers, and redirects. Thoroughly test SameSite cookie handling in these types of scenarios to identify potential vulnerabilities.
-*   **Be aware of potential SameSite bypasses related to specific APIs:** Certain APIs, such as the BackgroundFetch API and the Web Share API, can be used to bypass SameSite cookie restrictions. Be aware of these potential bypasses and look for similar issues in other APIs.
-*   **Pay close attention to Android-specific vulnerabilities:** Android's unique features and APIs can introduce new attack vectors. Be sure to test your exploits on Android devices and emulators to uncover these types of issues.
-*   **When analyzing Mojo interfaces, pay close attention to validation and access control:** Insufficient validation of Mojo interfaces and improper access control can lead to privilege escalation and other vulnerabilities.
-*   **Investigate unusual protocols:** Scrutinize the handling of non-standard URL schemes like `intent://`, `javascript:`, `file://`, and `chrome://`. Pay close attention to how these schemes interact with security boundaries and origin checks.
-*   **Explore CSP bypasses:** Thoroughly examine CSP implementations, looking for ways to circumvent or weaken the policy. Focus on interactions with iframes, service workers, and other browser features that might introduce vulnerabilities.
-*   **Test Android WebView:** Given the prevalence of WebView-related vulnerabilities, prioritize testing on this platform. Pay attention to how WebView handles JavaScript execution, navigation, and interactions with native Android APIs.
-*   **Analyze specific UI elements:** Focus on specific UI elements that have been frequent targets of attacks, such as the address bar, permission prompts, and download dialogs. Look for ways to manipulate their appearance or behavior to mislead users.
-*   **Examine specific APIs:** Investigate the security implications of specific APIs that have been identified as potential sources of vulnerabilities, such as the EyeDropper API, the Web Share API, and the chrome.debugger API.
-*   **Consider file type handling:** Pay close attention to how the browser handles different file types, especially those that can be used to execute code or leak sensitive information (e.g., .url files, MSI installers).
+This section provides actionable tips for security research in Chromium, informed by common vulnerability patterns observed in VRP data.
 
-*   **Be aware of potential issues with the Translate API:** The Translate API, while useful for translation purposes, can also be abused to bypass security checks and introduce XSS vulnerabilities.
-*   **Be aware of potential issues with the File System API:** The File System API, while useful for legitimate purposes, can also be abused to bypass security restrictions and access sensitive information.
-*   **Be aware of potential issues with the Push Messaging API:** The Push Messaging API, while useful for legitimate purposes, can also be abused to leak subscription information or spoof messages.
-*   **Be aware of potential issues with the Chrome Enterprise MSI installer:** The Chrome Enterprise MSI installer, while useful for enterprise deployments, can also be abused to elevate privileges or execute arbitrary code.
-*   **Be aware of potential issues with the Web Share API:** The Web Share API, while useful for sharing content, can also be abused to bypass SameSite cookie restrictions or leak sensitive information.
-*   **Be aware of potential issues with the chrome.downloads API:** The chrome.downloads API, while useful for managing downloads, can also be abused to bypass security restrictions and access sensitive information.
-*   **Be aware of potential issues with the Portal API:** The Portal API, while useful for creating seamless transitions between pages, can also be abused to bypass security restrictions or spoof the origin.
-*   **Be aware of potential issues with the Mojo IPC mechanism:** The Mojo IPC mechanism, while useful for inter-process communication, can also be abused to bypass security restrictions or leak sensitive information.
-*   **Be aware of potential issues with the custom cursor implementation:** The custom cursor implementation, while useful for customizing the user experience, can also be abused to overlay and obscure parts of the browser UI, potentially leading to clickjacking or other attacks.
-*   **Be aware of potential issues with the SameSite cookie implementation:** The SameSite cookie implementation, while useful for preventing CSRF attacks, can also be bypassed in certain scenarios, such as when using the BackgroundFetch API or the Web Share API.
-*   **Be aware of potential issues with the Android intent mechanism:** The Android intent mechanism, while useful for inter-application communication, can also be abused to bypass security restrictions or spoof the origin.
-*   **Be aware of potential issues with the handling of file types:** The handling of file types, especially those that can execute code or leak sensitive information, can be a source of vulnerabilities.
-*   **Be aware of potential issues with the handling of long URLs:** The handling of long URLs, especially those with specific characters or schemes, can be a source of vulnerabilities.
-*   **Be aware of potential issues with the handling of untrusted input in UI elements:** The handling of untrusted input in UI elements, such as dialog titles and button labels, can lead to injection attacks and other vulnerabilities.
+**1. UI Security & Spoofing (High Likelihood):**
 
-**Wiki Pages (Order by Likelihood/VRP Value - *Adjust Dynamically*):**
+*   **Focus:** Examine UI rendering logic, especially for security indicators (address bar, permission prompts, dialogs). Look for spoofing, obscuring, or bypassing vulnerabilities.
+*   **Techniques:** Analyze UI element interactions, edge cases, race conditions, and overlays (e.g., PiP windows, custom cursors, extension popups). Consider mobile-specific UI paradigms and long URLs/special schemes in the address bar.
+*   **VRP Patterns:** Address bar spoofing (long URLs, blob: origins, scheme placement), UI element overlay/redressing, dialog spoofing (PWA install prompts), state management flaws in UI updates.
+*   **Specific Areas:** Omnibox URL display, permission prompt handling, dialog rendering, custom cursor implementation, Picture-in-Picture UI, Share dialogs.
+
+**2. Extension Security & API Abuse (High Likelihood):**
+
+*   **Focus:** Analyze extension API security boundaries and permission models, especially privileged APIs (e.g., `chrome.debugger`, `chrome.tabs`, `chrome.downloads`, `chrome://policy`). Look for unintended API usage and sandbox escapes.
+*   **Techniques:** Validate extension interactions with privileged APIs, analyze policy bypasses, investigate extension interactions with back-forward cache and DevTools.
+*   **VRP Patterns:** Sandbox escapes via DevTools API (`chrome.devtools.inspectedWindow.reload`), policy manipulation (`chrome://policy`), misuse of privileged extension APIs, CSP bypasses via extensions.
+*   **Specific Areas:** `chrome.debugger` API, `chrome.tabs` API, `chrome.downloads` API, extension permission handling, extension policy enforcement, extension sandbox interactions.
+
+**3. Autofill & Input Handling Bypasses (High Likelihood):**
+
+*   **Focus:** Investigate bypasses for autofill security measures. Analyze input methods (taps, keyboard, EyeDropper API), timing attacks, and interactions with other browser features.
+*   **Techniques:** Analyze code handling user input and triggering autofill prompts. Consider tap-based attacks and input field cache protections.
+*   **VRP Patterns:** Bypasses using EyeDropper API, tap-based attacks on prompts, prompt rendering near/under cursor, space key input bypasses, input field cache vulnerabilities.
+*   **Specific Areas:** Autofill prompt logic, input event handling, EyeDropper API interactions, payment autofill flows.
+
+**4. IPC/Mojo Security (Medium Likelihood):**
+
+*   **Focus:** Deeply analyze IPC messages and Mojo interfaces, especially those callable from less privileged contexts (renderer, extensions). Look for insufficient validation and access control.
+*   **Techniques:** Analyze interfaces handling file system access, user input simulation, privileged UI interaction, permission management, and DevTools APIs.
+*   **VRP Patterns:** Insufficient validation in Mojo interfaces, privilege escalation via IPC, sandbox escapes through IPC channels.
+*   **Relevant Files:** `mojo/public/interfaces/bindings/native_struct.mojom`, `mojo/public/cpp/bindings/message.h`, `mojo/core/node_channel.cc`.
+
+**5. Web API & Feature Security (Medium Likelihood):**
+
+*   **Focus:** Investigate newer or complex web platform features (WebTransport, WebCodecs, WebGPU, WebXR, FedCM, Web Share, Web Bluetooth, Web USB, Web Serial, Portals, File System API, Push Messaging API, Translate API). Look for design or implementation flaws and interactions with security boundaries.
+*   **Techniques:** Analyze API implementations, permission models, and interactions with other browser features. Consider unusual protocols and CSP bypasses related to these APIs. Test on Android WebView.
+*   **VRP Patterns:** Origin spoofing in dialogs related to Web APIs, SameSite cookie bypasses via Web Share API, UI obscuration by FedCM prompts/PiP windows, permission delegation issues in chooser dialogs.
+*   **Specific APIs:** WebTransport, WebCodecs, WebGPU, WebXR, FedCM, Web Share API, Web Bluetooth, Web USB, Web Serial, Portals, File System API, Push Messaging API, Translate API.
+
+**6. General Code Analysis Techniques:**
+
+*   **Fuzzing:** Use fuzzers (e.g., libFuzzer) to test APIs and file parsers, focusing on complex formats and stateful interactions.
+*   **Code Review:** Manually review code changes, especially in security-sensitive areas (IPC, process isolation, permissions, input validation). Look for common vulnerabilities (TOCTOU, overflows, UAF, origin issues).
+*   **Variant Analysis:** Search for similar patterns after finding a vulnerability. Use tools like CodeQL.
+*   **Exploit Knowledge:** Study exploit techniques to inform code review and fuzzing.
+*   **Corner Cases & Regressions:** Check for unexpected behavior in corner cases and regressions of fixed bugs.
+*   **Mobile Testing:** Test on mobile platforms (Android WebView, Chrome OS) for platform-specific vulnerabilities.
+*   **File Type Handling:** Analyze handling of file types that can execute code or leak data (e.g., .url, MSI).
+*   **Unusual Protocols:** Scrutinize non-standard URL schemes (`intent://`, `javascript:`, `file://`, `chrome://`).
+*   **CSP Analysis:** Examine CSP implementations for bypasses and weaknesses.
+*   **Complex Feature Interactions:** Analyze interactions between different components for logic flaws.
+*   **User Interaction as Vector:** Consider user actions (clicks, taps, keyboard) as potential vulnerability triggers.
+*   **Data Validation in UI:** Validate data used in UI elements to prevent injection attacks.
+*   **SameSite Cookie Handling:** Thoroughly test SameSite cookie handling in complex scenarios.
+*   **Android-Specific Checks:** Pay attention to Android-specific features and APIs.
+
+**7. Specific UI Element Analysis:**
+
+*   **Focus:** Target UI elements frequently exploited: address bar, permission prompts, download dialogs, security interstitials.
+*   **Techniques:** Analyze rendering and interaction logic. Look for manipulation of appearance or behavior to mislead users.
+*   **Specific Elements:** Address bar (Omnibox), permission prompts (PEPC), download dialogs, security interstitials, external protocol dialogs, Web Share dialog, FedCM prompts, Picture-in-Picture windows.
+
+By focusing on these areas and techniques, and by continuously updating the wiki with new findings and VRP data insights, we can improve our Chromium security research effectiveness.
+
+**Wiki Pages (Areas for Wiki Pages - Order by Likelihood/VRP Value - *Adjust Dynamically*):**
 
 This list prioritizes components based on a combination of the likelihood of finding a vulnerability and the potential VRP reward. This aims to balance the probability of success with the potential payout.
 
@@ -132,7 +141,7 @@ This list prioritizes components based on a combination of the likelihood of fin
 
 ## Additional Focus Areas (Lower Priority, Order by Likelihood/VRP Value - *Adjust Dynamically*)
 
-These did not rank highly. However, they remain areas for potential investigation.
+These did not rank highly, but are areas to be aware of during research. However, they remain areas for potential investigation.
 
 *   **Mojo:** Deeply analyze Inter-Process Communication (IPC) messages, especially Mojo interfaces, handled by the browser process, GPU process, and utility processes. Look for messages/interfaces callable from less privileged contexts (renderer, extensions) that lack sufficient validation. Pay close attention to interfaces that handle file system access, simulate user input (like `StartDragging` with specific parameters), interact with privileged UI, manage permissions, or interact with DevTools APIs (`chrome.devtools.inspectedWindow.reload`, `debugger`). Insufficient checks here are a common source of sandbox escapes and privilege escalation. Relevant files include: `mojo/public/interfaces/bindings/native_struct.mojom`, `mojo/public/cpp/bindings/message.h`, `mojo/core/node_channel.cc`.
 *   **Web Bluetooth (`bluetooth.md`):** Focus on the security of the Web Bluetooth API, including device pairing and data transfer. Relevant files include: `bluetooth.md`, `content/browser/bluetooth/web_bluetooth_service_impl.cc`, `chrome/browser/ui/views/bluetooth/bluetooth_chooser_controller.cc`.
