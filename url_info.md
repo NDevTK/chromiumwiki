@@ -20,6 +20,11 @@ The `UrlInfo` struct packages a `GURL` together with extra state required to mak
 -   `common_coop_origin`: Incorrectly determining the common COOP origin can lead to incorrect `BrowsingInstance` selection.
 -   `cross_origin_isolation_key`: Incorrectly determining the `CrossOriginIsolationKey` can lead to security issues.
 
+### Security Considerations
+
+-   A vulnerability existed where URL spoofing in the Android address bar could occur if the scheme is later in the URL. This issue has been fixed. (VRP.txt)
+    -   Fixed in commit: 40072988
+
 ### Related Files
 
 -   `content/browser/url_info.cc`
@@ -47,9 +52,3 @@ The `UrlInfo` struct packages a `GURL` together with extra state required to mak
 -   The logic within `UrlInfo::requests_default_origin_agent_cluster_isolation`, `UrlInfo::requests_origin_agent_cluster_by_header`, `UrlInfo::requests_origin_keyed_process_by_header`, and `UrlInfo::requests_coop_isolation` to ensure that isolation requests are correctly identified.
 -   The interaction between the various fields in `UrlInfo` and how they collectively determine the isolation requirements for a given URL.
 -   The handling of edge cases, such as when multiple isolation requests are present or when conflicting isolation requirements are encountered.
-
-### Files Analyzed:
-
--   `chromiumwiki/url_info.md`
--   `content/browser/url_info.cc`
--   `content/browser/url_info.h`

@@ -15,6 +15,11 @@ The focus of this page is on the Chromium permissions component, specifically ho
 *   **Bypassing Permissions Policy:** Incorrectly implemented permissions policy checks could allow a malicious actor to bypass the intended restrictions.
 *   **Incorrect Context Checks:** Incorrectly implemented context checks could allow a malicious actor to gain access to resources they should not have access to.
 
+### Security Considerations
+
+-   A vulnerability existed where an extension popup could render over permission prompts and screen share dialogs, potentially allowing the extension to spoof parts of the prompt's UI. This issue has been fixed. (VRP.txt)
+    -   Fixed in commit: 40058873
+
 **Further Analysis and Potential Issues:**
 
 The permission model in Chromium is complex, involving multiple layers of checks and balances. It is important to analyze how permissions are granted, stored, and enforced. The `permission_controller_impl.cc` file is a key area to investigate. This file manages the core logic for permission requests and status checks.

@@ -16,6 +16,10 @@
 * **Router Rules:**  Vulnerabilities in `SetupRouterEvaluator` or the router evaluator could bypass navigation restrictions.  The handling of router rules and their interaction with fetch event handlers needs careful review.
 * **Origin Trial Tokens:**  Improper handling of origin trial tokens in `SetValidOriginTrialTokens` could allow the use of expired or invalid tokens.
 
+### Security Considerations
+
+-   A vulnerability existed that enabled persistent XSS via a malicious user-uploaded PaymentRequest manifest and service worker. This issue has been fixed. (VRP2.txt)
+    -   Reporter credit: Vsevolod Kokorin (Slonser) of Solidlab
 
 **Further Analysis and Potential Issues:**
 

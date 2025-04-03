@@ -14,6 +14,11 @@ This page documents potential security vulnerabilities related to guest view fun
 * **Event Dispatching:** Vulnerabilities in event dispatching (`DispatchEvent` in `guest_view_manager.cc`) could allow malicious event injection or data manipulation.
 * **Guest View Type Registration:**  Vulnerabilities in `RegisterGuestViewType` could allow malicious guest view types or registry manipulation.
 
+### Security Considerations
+
+-   A vulnerability existed where apps could access http/https sites outside of a webview context via blob URLs. This allowed an app to run code within a http/https site in the associated profile (outside of the webview). This issue has been fixed. (VRP2.txt)
+    -   Reporter credit: David Erceg
+
 ## Further Analysis and Potential Issues:
 
 * **IPC Security:** Review IPC mechanisms for vulnerabilities related to message handling, input validation, and authorization. The `AttachGuest`, `ViewCreated`, and `ViewGarbageCollected` functions should be examined.

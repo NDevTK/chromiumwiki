@@ -6,10 +6,10 @@ This page details the security aspects of the `RenderProcessHostImpl` class, inc
 
 `RenderProcessHostImpl` uses process locks to enforce site isolation. A process lock restricts a renderer process to a specific site or origin, preventing it from accessing data from other sites or origins.
 
--   `SetProcessLock`: Sets the process lock for the `RenderProcessHost`.
--   `GetProcessLock`: Returns the process lock for the `RenderProcessHost`.
--   `IsProcessLockedToSiteForTesting`: Returns true if the process is locked to a site for testing.
--   `NotifyRendererOfLockedStateUpdate`: Notifies the renderer of a locked state update.
+*   `SetProcessLock`: Sets the process lock for the `RenderProcessHost`.
+*   `GetProcessLock`: Returns the process lock for the `RenderProcessHost`.
+*   `IsProcessLockedToSiteForTesting`: Returns true if the process is locked to a site for testing.
+*   `NotifyRendererOfLockedStateUpdate`: Notifies the renderer of a locked state update.
 
 ### Process Lock Details
 
@@ -107,33 +107,47 @@ By detecting and handling bad messages, `RenderProcessHostImpl` helps to mitigat
 
 ## Other Security-Related Aspects
 
--   `SetIsCrossOriginIsolated`: Sets whether the process is cross-origin isolated.
--   `SetIsIsolatedContext`: Sets whether the process is an isolated context.
--   `SetIsWebSecurityDisabled`: Sets whether web security is disabled.
--   `SetIsLockedToSite`: Sets whether the process is locked to a site.
--   `AddOriginAgentClusterStateIfNecessary`: Adds the origin to the list of origins that are isolated by the Origin-Agent-Cluster.
--   `DetermineOriginAgentClusterEndResult`: Determines the final result of the origin agent cluster isolation.
--   `CheckCSPEmbeddedEnforcement`: Checks if the Content Security Policy Embedded Enforcement is valid.
--   `CheckCredentialedSubresource`: Checks if the subresource request contains embedded credentials.
--   `CheckAboutSrcDoc`: Checks if the navigation is to an about:srcdoc URL.
--   `ShouldRequestSiteIsolationForCOOP`: Determines if a site should be isolated due to COOP.
--   `ComputeCrossOriginEmbedderPolicy`: Computes the Cross-Origin-Embedder-Policy.
--   `CheckResponseAdherenceToCoep`: Checks if the response adheres to the embedder's COEP.
--   `ComputeCrossOriginIsolationKey`: Computes the `CrossOriginIsolationKey` for the navigation.
--   `ComputeWebExposedIsolationInfo`: Computes the web-exposed isolation information.
--   `ComputeCommonCoopOrigin`: Computes the common COOP origin for the navigation.
+*   `SetIsCrossOriginIsolated`: Sets whether the process is cross-origin isolated.
+*   `SetIsIsolatedContext`: Sets whether the process is an isolated context.
+*   `SetIsWebSecurityDisabled`: Sets whether web security is disabled.
+*   `SetIsLockedToSite`: Sets whether the process is locked to a site.
+*   `AddOriginAgentClusterStateIfNecessary`: Adds the origin to the list of origins that are isolated by the Origin-Agent-Cluster.
+*   `DetermineOriginAgentClusterEndResult`: Determines the final result of the origin agent cluster isolation.
+*   `CheckCSPEmbeddedEnforcement`: Checks if the Content Security Policy Embedded Enforcement is valid.
+*   `CheckCredentialedSubresource`: Checks if the subresource request contains embedded credentials.
+*   `CheckAboutSrcDoc`: Checks if the navigation is to an about:srcdoc URL.
+*   `ShouldRequestSiteIsolationForCOOP`: Determines if a site should be isolated due to COOP.
+*   `ComputeCrossOriginEmbedderPolicy`: Computes the Cross-Origin-Embedder-Policy.
+*   `CheckResponseAdherenceToCoep`: Checks if the response adheres to the embedder's COEP.
+*   `ComputeCrossOriginIsolationKey`: Computes the `CrossOriginIsolationKey` for the navigation.
+*   `ComputeWebExposedIsolationInfo`: Computes the web-exposed isolation information.
 
 ## Further Investigation
 
--   The detailed logic of process lock enforcement and how it interacts with site isolation policies.
--   The mechanisms for detecting and handling bad messages from the renderer process.
--   The interaction between `RenderProcessHostImpl` and `ChildProcessSecurityPolicyImpl` in enforcing security policies.
--   The role of `RenderProcessHostImpl` in handling cross-origin navigations and redirects.
--   The security implications of process reuse and the criteria used to determine process suitability.
+*   The detailed logic of process lock enforcement and how it interacts with site isolation policies.
+*   The mechanisms for detecting and handling bad messages from the renderer process.
+*   The interaction between `RenderProcessHostImpl` and `ChildProcessSecurityPolicyImpl` in enforcing security policies.
+*   The role of `RenderProcessHostImpl` in handling cross-origin navigations and redirects.
+*   The security implications of process reuse and the criteria used to determine process suitability.
 
-## Related Files
+**Specific areas to investigate (based on VRP data):**
 
--   `content/browser/renderer_host/render_process_host_impl.h`
--   `content/browser/renderer_host/render_process_host_impl.cc`
--   `content/browser/child_process_security_policy_impl.h`
--   `content/browser/child_process_security_policy_impl.cc`
+*   Compromised renderer can control your mouse and escape sbx. Focus on `StartDragging` Mojo IPC interface and potential for compromised renderers to control the mouse.
+*   Site isolation break because of double fetch of shared buffer.
+
+## Files Reviewed:
+
+* `chrome/browser/enterprise/browser_management/browser_management_status_provider.cc`
+* `chrome/browser/policy/profile_policy_connector.cc`
+* `components/policy/core/common/policy_map.cc`
+* `components/policy/core/common/policy_service.cc`
+* `components/policy/core/common/policy_service_impl.cc`
+* `components/policy/core/common/policy_loader_win.cc`
+* `components/policy/core/common/policy_loader_mac.mm`
+* `components/policy/core/common/schema_registry.cc`
+* `components/policy/core/common/cloud/cloud_policy_manager.cc`
+* `components/policy/core/common/policy_utils.cc`
+* `components/policy/core/common/policy_proto_decoders.cc`
+* `components/policy/core/common/proxy_policy_provider.cc`
+* `components/policy/core/browser/browser_policy_connector.cc`
+* `components/policy/content/policy_blocklist_navigation_throttle.cc`

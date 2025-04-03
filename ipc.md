@@ -13,6 +13,10 @@ This page documents potential security vulnerabilities related to inter-process 
 * **Mojo Message Handling:**  Vulnerabilities in Mojo message handling could allow malicious code execution or denial-of-service attacks.  The `OnMojoError` function and its interaction with the termination process need to be analyzed.
 * **Metrics and Resource Management:**  Improper handling of metrics or resource management during process termination could lead to information leakage or denial-of-service vulnerabilities.  The `CreateMetricsAllocator`, `ShareMetricsAllocatorToProcess`, `ForceShutdown`, and `OnChildDisconnected` functions need review.
 
+### Security Considerations
+
+-   A vulnerability existed where the Browser Process wrongly handled the ACCEPT_BROKER_CLIENT message. This could be triggered by a compromised renderer process and lead to a browser crash. This issue has been fixed. (VRP2.txt)
+    -   Fixed by applying the patch described in VRP2.txt.
 
 ## Further Analysis and Potential Issues:
 

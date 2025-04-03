@@ -15,6 +15,7 @@ The focus of this page is on the Chromium Push Messaging component, specifically
 *   **Bypassing Permissions:** Logic flaws could allow an attacker to bypass permission checks for subscribing to push messages.
 *   **Incorrect Data Validation:** Improper validation of push message data could lead to vulnerabilities.
 *   **Push Message Spoofing:** Vulnerabilities could allow a malicious actor to spoof push messages.
+*   **Inappropriate Implementation:** Inappropriate implementation in PushMessaging, allowing a compromised renderer to leak other site's PushSubscription info, including application_server_key and auth which should be treated as a secret. Furthermore, attacker could subscribe to other site and send fake message for spoofing (Fixed, Commit: 40060358).
 
 **Further Analysis and Potential Issues:**
 
