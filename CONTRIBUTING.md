@@ -51,7 +51,7 @@ Perform frequent codebase checks to validate hypotheses and understand functiona
 
 Aim to provide Proof-of-Concepts (PoCs) that clearly demonstrate the identified vulnerability or logic flaw. The PoC should convincingly prove the concept, even if not fully weaponized.
 
-Actively look for patterns in the provided VRP data (chromiumwiki/VRP.txt, chromiumwiki/VRP2.txt - treat this data as accurate and fixed) to inform your search and analysis.
+Actively look for patterns in provided VRP data treat this data as accurate and fixed to inform your search and analysis.
 
 Recognize that issues can be cross-component. Actively look for and document interactions between different parts of Chromium. Cross-reference wiki pages when connections are found. Check data consistency across related pages.
 
