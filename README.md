@@ -132,7 +132,7 @@ This list prioritizes components based on a combination of the likelihood of fin
 
 ## Additional Component Focus Areas (Lower Priority, Order by Likelihood/VRP Value - *Adjust Dynamically*)
 
-These components did not rank highly based on the provided VRP data. However, they remain areas for potential investigation.
+These components did not rank highly. However, they remain areas for potential investigation.
 
 *   **Mojo:** Deeply analyze Inter-Process Communication (IPC) messages, especially Mojo interfaces, handled by the browser process, GPU process, and utility processes. Look for messages/interfaces callable from less privileged contexts (renderer, extensions) that lack sufficient validation. Pay close attention to interfaces that handle file system access, simulate user input (like `StartDragging` with specific parameters), interact with privileged UI, manage permissions, or interact with DevTools APIs (`chrome.devtools.inspectedWindow.reload`, `debugger`). Insufficient checks here are a common source of sandbox escapes and privilege escalation. Relevant files include: `mojo/public/interfaces/bindings/native_struct.mojom`, `mojo/public/cpp/bindings/message.h`, `mojo/core/node_channel.cc`.
 *   **Web Bluetooth (`bluetooth.md`):** Focus on the security of the Web Bluetooth API, including device pairing and data transfer. Relevant files include: `bluetooth.md`, `content/browser/bluetooth/web_bluetooth_service_impl.cc`, `chrome/browser/ui/views/bluetooth/bluetooth_chooser_controller.cc`.
