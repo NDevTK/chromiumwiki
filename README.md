@@ -22,9 +22,9 @@ Each wiki page follows a consistent format:
 5.  **Areas Requiring Further Investigation:** List specific questions, functions, or interactions needing deeper analysis.
 6.  **Related VRP Reports:** Link to specific VRP reports (like those in `VRP.txt` and `VRP2.txt`) that demonstrate vulnerabilities in this or related components.
 
-**General Security Research Tips (Informed by VRP Data):**
+**General Security Research Tips:**
 
-This section provides actionable tips for security research in Chromium, informed by common vulnerability patterns observed in VRP data.
+This section provides actionable tips for security research in Chromium, informed by common vulnerability patterns observed.
 
 **1. UI Security & Spoofing (High Likelihood):**
 
