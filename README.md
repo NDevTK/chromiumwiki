@@ -20,7 +20,7 @@ Each wiki page follows a consistent format:
 3.  **Further Analysis and Potential Issues:** Provide a more detailed analysis of identified issues, highlighting specific areas of concern within the codebase. Integrate research notes (files reviewed, key functions). Summarize relevant CVEs/VRP reports and their connection to the discussed functionalities.
 4.  **Code Analysis:** Include specific code snippets and observations relevant to potential vulnerabilities.
 5.  **Areas Requiring Further Investigation:** List specific questions, functions, or interactions needing deeper analysis.
-6.  **Related VRP Reports:** Link to specific VRP reports that demonstrate vulnerabilities in this or related components.
+6.  **Related VRP Reports:** Link to specific VRP reports (like those in `VRP.txt` and `VRP2.txt`) that demonstrate vulnerabilities in this or related components.
 
 **General Security Research Tips:**
 
