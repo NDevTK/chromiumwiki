@@ -1,0 +1,378 @@
+P1
+Vulnerability	
+Security: Browser-side origin confusion for javascript/data URLs opened in a new window/tab by cross-origin iframe
+20000	
+Chromium > Internals > Sandbox > SiteIsolation
+S1
+Fixed	40059251	Jan 9, 2024 06:44AM
+P1
+Vulnerability	
+Security: Android WebView: iframe on different origin can execute arbitrary JavaScript in top document via window.open() or links with _blank target
+15000	
+Chromium > Mobile > WebView
+S1
+Fixed	40052335	Jul 10, 2023 10:09PM
+P1
+Vulnerability	
+Security: Page can obtain autofill data with two consecutive taps using EyeDropper API (bypass of multiple prior fixes)
+10000	
+Chromium > UI > Browser > Autofill > Payments
+S2
+Fixed	40065604	Oct 5, 2024 04:39PM
+P1
+Vulnerability	
+Security: Android: URL spoofing in address bar if scheme is later in URL
+8500	
+Chromium > UI > Browser > Omnibox
+S1
+Fixed	40072988	Jan 9, 2024 11:53AM
+P1
+Vulnerability	
+Security: Some WebUI pages enable MojoJS bindings for the subsequently-navigated site
+7500	
+Chromium > Internals > Sandbox > SiteIsolation
+S1
+Fixed	40053875	Jan 9, 2024 02:32AM
+P1
+Vulnerability	
+Security: Android address bar hidden after slow navigation finishes, if slow nav is initiated on page load
+7000	
+Chromium > UI > Browser > Navigation
+S1
+Fixed	379652406	Mar 18, 2025 12:39PM
+P1
+Vulnerability	
+Security: Android address bar URL spoof if page is scrolling and tab is switched
+6000	
+Chromium
+S2
+Fixed	343938078	Sep 13, 2024 04:42PM
+P2
+Vulnerability	
+Security: Extension popup can render over permission prompts and screen share dialog
+5000	
+Chromium > Platform > Extensions
+S3
+Fixed	40058873	Aug 16, 2024 09:54PM
+P1
+Vulnerability	
+Security: Autofill prompt can be obscured by Picture-in-Picture overlay, allows stealthy autofill data theft
+5000	
+Chromium > UI > Browser > Autofill
+S2
+Fixed	40058582	Jan 9, 2024 07:41AM
+P1
+Vulnerability	
+Security: Extensions with debugger permission can list URLs and send commands to incognito tabs and other profile tabs
+5000	
+Chromium > Platform > DevTools
+S2
+Fixed	40056776	Jul 29, 2022 10:26PM
+P1
+Vulnerability	
+Security: PEPC prompt can be obscured by Video/Document PiP window
+4000	
+Chromium > UI > Browser > Permissions > Prompts
+S1
+Fixed	342194497	Nov 4, 2024 05:30PM
+P1
+Vulnerability	
+Security: Document PiP can spoof top-level page origin, show attacker content in PiP window, open PiP windows from iframes
+4000	
+Chromium > Blink > Media > PictureInPicture
+S2
+Fixed	40063068	Jan 9, 2024 07:18AM
+P1
+Vulnerability	
+Fenced frame spoof documentPictureInPicture
+4000	
+Chromium > Blink > Media > PictureInPicture
+S2
+Fixed	40062954	Jul 20, 2023 06:37PM
+P1
+Vulnerability	
+chrome.debugger 'Page.navigate' can navigate iframes to file:// when not enabled.
+3000	
+Chromium > Platform > DevTools > Privacy and Security
+S1
+Fixed	40060173	Feb 12, 2025 08:27AM
+P2
+Vulnerability	
+Iframe sandbox allow-popups-to-escape-sandbox bypass
+3000	
+Chromium > Blink > SecurityFeature > IFrameSandbox
+S2
+Fixed	40069622	Oct 24, 2024 12:45PM
+P1
+Vulnerability	
+Security: Autofill prompt can be obscured by FedCM bubble dialog
+3000	
+Chromium > Blink > Identity > FedCM
+S2
+Fixed	339481295	Sep 5, 2024 04:47PM
+P1
+Vulnerability	
+chrome.debugger API bypasses the runtime_blocked_hosts cookie protection
+3000	
+Chromium > Platform > Extensions > API
+S2
+Fixed	40060283	Apr 18, 2024 06:23PM
+P1
+Vulnerability	
+intent:// restrictions bypassed via firebase dynamic links
+3000	
+Chromium > Mobile > Intents
+S2
+Fixed	40064598	Feb 15, 2024 03:43PM
+P1
+Vulnerability	
+Security: Extension can obscure active window with an inactive window, user can interact with sensitive UI using keyboard without being aware
+3000	
+Chromium > Platform > Extensions > API
+S2
+Fixed	40058935	Jan 9, 2024 09:40AM
+P1
+Vulnerability	
+Security: Extension can move window off screen, user can interact with sensitive UI using keyboard without being aware
+3000	
+Chromium > Platform > Extensions > API
+S2
+Fixed	40058916	Jan 9, 2024 09:40AM
+P1
+Vulnerability	
+Security: Pointer lock can be used to bypass mouse movement/keyboard input requirements for autofill
+3000	
+Chromium > Blink > Input > PointerLock
+S2
+Fixed	40056870	Jan 9, 2024 08:55AM
+P1
+Vulnerability	
+Security: Cross-origin iframe can navigate top window to different site via same-site open redirect or XSS redirect
+3000	
+Chromium > Blink > SecurityFeature > IFrameSandbox
+S2
+Fixed	40053936	Jan 9, 2024 08:04AM
+P1
+Vulnerability	
+Security: Device chooser dialogs do not show origin if initiator origin is opaque
+3000	
+Chromium > Blink > Serial
+S2
+Fixed	40061374	Jan 9, 2024 07:49AM
+P1
+Vulnerability	
+Security: Page can obtain autofill data with two consecutive taps with minimal user awareness, bypasses issue 1240472 and issue 1279268 fixes
+3000	
+Chromium > Privacy
+S2
+Fixed	40060134	Jan 9, 2024 07:46AM
+P1
+Vulnerability	
+Security: After refactor, page can use EyeDropper API to bypass mouse movement/keyboard input requirements for autofill (regression of issue 1287364)
+3000	
+Chromium > UI > Browser > Autofill
+S2
+Fixed	40063230	Jan 9, 2024 07:27AM
+P1
+Vulnerability	
+Security: Android: Bluetooth and USB chooser dialogs do not use top-level origin with permission delegation
+3000	
+Chromium > Blink > USB
+S2
+Fixed	40061373	Jan 9, 2024 06:44AM
+P1
+Vulnerability	
+Security: Page can cause autofill prompt to render near cursor in order to bypass intentional mouse movement input requirements for autofill (Bypass of issue 1240472 fix)
+3000	
+Chromium > Privacy
+S2
+Fixed	40058217	Jan 9, 2024 06:15AM
+P1
+Vulnerability	
+Security: Page can cause autofill prompt to render under cursor in order to bypass mouse movement/keyboard input requirements for autofill
+3000	
+Chromium > Privacy
+S2
+Fixed	40056900	Jan 9, 2024 03:47AM
+P1
+Vulnerability	
+Security: crossOriginIsolated bypass
+3000	
+Chromium > Blink > SecurityFeature > COOP
+S2
+Fixed	40056434	Jan 9, 2024 03:43AM
+P1
+Vulnerability	
+Sandbox bypass "allow-downloads"
+3000	
+Chromium > Blink > SecurityFeature > IFrameSandbox
+S2
+Fixed	40060695	Oct 8, 2023 08:39AM
+P1
+Vulnerability	
+Sandbox escape: bypass allow-popups-to-escape-sandbox
+2500	
+Chromium > Blink > SecurityFeature > IFrameSandbox
+S2
+Fixed	40057525	Jan 9, 2024 03:48AM
+P2
+Vulnerability	
+Security: PEPC prompt renders outside initiator window in small windows
+2000	
+Chromium > UI > Browser > Permissions > Prompts
+S3
+Fixed	341663594	Nov 4, 2024 05:30PM
+P1
+Vulnerability	
+Security: FedCM prompt bubble can be obscured by Video/Document PiP window, allow for hidden login
+2000	
+Chromium > Blink > Identity > FedCM
+S2
+Fixed	339654392	Oct 30, 2024 03:43PM
+P1
+Vulnerability	
+Security: FedCM prompts do not show origin if initiator origin is opaque
+2000	
+Chromium > Blink > Identity > FedCM
+S2
+Fixed	340893685	Aug 29, 2024 04:41PM
+P2
+Vulnerability	
+Security: FedCM prompt bubble renders outside of opening window, causing various issues
+2000	
+Chromium > Blink > Identity > FedCM
+S3
+Fixed	338233148	Aug 23, 2024 04:45PM
+P1
+Vulnerability	
+Page can use EyeDropper API to bypass mouse movement/keyboard input requirements for autofill (bypass of issue 1240472 fix)
+2000	
+Chromium > Blink > Forms > Color
+S2
+Fixed	40058496	Jan 9, 2024 09:28AM
+P1
+Vulnerability	
+Security: Origin spoof in external protocol dialogs via server-side redirect to external protocol
+2000	
+Chromium > UI > Browser > Navigation
+S2
+Fixed	40055515	Jan 9, 2024 07:51AM
+P1
+Vulnerability	
+Security: Compromised renderer can set custom cursor up to 1024px over browser UI and other windows
+2000	
+Chromium > Blink > Input
+S2
+Fixed	40057147	Jan 9, 2024 03:48AM
+P2
+Vulnerability	
+Portals URL spoof after crash
+2000	
+Chromium > Blink > Portals
+S2
+Fixed	40064170	Aug 3, 2023 06:36PM
+P2
+Vulnerability	
+Leaking window.length without opener reference.
+2000	
+Chromium > Internals > Sandbox > SiteIsolation
+S3
+Fixed	40059056	Jul 29, 2022 10:26PM
+P1
+Vulnerability	
+SameSite strict cookies bypass/cross-origin download via `e.dataTransfer.setData('DownloadURL', ...`
+1000	
+Chromium > Blink > DataTransfer
+S2
+Fixed	40060358	Oct 22, 2024 04:43PM
+P1
+Vulnerability	
+Security: Web Share dialog URL is incorrectly elided in Android (ineffective fix for issue 1329541)
+1000	
+Chromium > UI > Security (Use Subcomponent) > UrlFormatting
+S2
+Fixed	40061104	May 23, 2024 11:27PM
+P1
+Vulnerability	
+Bypass PaymentRequest.show() calls after the first.
+1000	
+Chromium > Blink > Payments
+S3
+Fixed	40072274	Jan 9, 2024 11:11AM
+P1
+Vulnerability	
+documentPictureInPicture UI spoof via opener
+1000	
+Chromium > UI > Browser > Navigation
+S2
+Fixed	40062959	Jan 9, 2024 08:57AM
+P1
+Vulnerability	
+Security: Document PiP window can be resized and moved by compromised renderer, user can interact with sensitive UI using keyboard without being aware
+1000	
+Chromium > Blink > Media > PictureInPicture
+S3
+Fixed	40063071	Jan 9, 2024 07:14AM
+P1
+Vulnerability	
+URL Spoof after crash
+1000	
+Chromium > Internals > Sandbox > SiteIsolation
+S2
+Fixed	40057561	Jan 9, 2024 06:37AM
+P1
+Vulnerability	
+Security: heap-use-after-free in observer_list.h triggered via Notes/Annotation feature
+1000	
+Chromium > UI > Browser > TopChrome > SidePanel
+S1
+Fixed	40061678	May 13, 2023 06:34PM
+P2
+Vulnerability	
+Security: Page can use space key input to cause autofill prompt to render under cursor, bypasses mouse movement/designated keyboard input requirements for autofill
+1000	
+Chromium > UI > Browser > Autofill
+S3
+Fixed	40056936	Jul 29, 2022 10:49PM
+P2
+Vulnerability	
+Security: Share dialog on Windows can render over address bar, window controls
+1000	
+Chromium > Blink > WebShare
+S3
+Fixed	40056848	Jul 29, 2022 10:36PM
+P2
+Vulnerability	
+getThumbnail() CHECK leaks number of available PDF pages
+500	
+Chromium > Internals > Plugins > PDF
+S3
+Fixed	40059101	Jan 9, 2024 06:41AM
+P2
+Vulnerability	
+XSS from chrome-untrusted://new-tab-page URL parsing
+500	
+Chromium > Platform > Extensions
+S3
+Fixed	40057777	Jan 9, 2024 03:53AM
+P1
+Vulnerability	
+Android app install spoof via intent
+0	
+Chromium > Mobile > Intents
+S2
+Fixed	41493134	Jan 3, 2025 03:42PM
+P1
+Vulnerability	
+performance API reveals information about redirects (XS-Leak)
+0	
+Chromium > Blink > PerformanceAPIs
+S2
+Fixed	40054148	Sep 4, 2024 05:29PM
+P2
+Vulnerability	
+Clickjacking of chromium infra pages
+0	
+Chromium > Infra > LUCI
+S3
+Fixed	40073076	Jan 26, 2024 06:43PM
