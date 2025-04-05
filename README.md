@@ -5,9 +5,9 @@ This wiki contains analysis of Chromium components and potential security vulner
 **Important Notes:**
 
 *   **Dynamic Prioritization:** The order of wiki pages should initially reflect a combination of perceived bug likelihood and potential VRP reward (highest potential value first). **However, this order is dynamic and should be adjusted based on new information.** For instance:
-    * If a codebase search reveals specific patterns or potentially vulnerable functions related to a topic, its priority might increase.
-    * If significant time is spent investigating an area with little progress, its priority might decrease. Conversely, making good progress can increase priority.
-    * As new vulnerability types or attack vectors are discovered (internally or externally), related areas should be reprioritized.
+    *   If a codebase search reveals specific patterns or potentially vulnerable functions related to a topic, its priority might increase.
+    *   If significant time is spent investigating an area with little progress, its priority might decrease. Conversely, making good progress can increase priority.
+    *   As new vulnerability types or attack vectors are discovered (internally or externally), related areas should be reprioritized.
 *   **Continuous Updates:** Research findings, analysis, potential issues, and relevant VRP examples should be added *directly* to the relevant wiki page following the format below. **Do not create separate files for research notes.** As new ideas, findings, or VRP data emerge, **ensure the corresponding wiki pages are updated promptly** to reflect the latest understanding.
 *   **Detail is Key:** Please keep the security research tips below very detailed, drawing on examples from the VRP data; do not shorten them.
 
@@ -24,171 +24,138 @@ Each wiki page follows a consistent format:
 
 **General Security Research Tips:**
 
-This section provides actionable tips for security research in Chromium, informed by common vulnerability patterns observed.
+This section provides actionable tips for security research in Chromium, informed by common vulnerability patterns observed in VRP reports.
 
-**1. UI Security & Spoofing (High Likelihood):**
+**1. UI Security: Spoofing & Obscuring (High Likelihood, High VRP Value):**
 
-*   **Focus:** Examine UI rendering logic, especially for security indicators (address bar, permission prompts, dialogs). Look for spoofing, obscuring, or bypassing vulnerabilities.
-*   **Techniques:** Analyze UI element interactions, edge cases, race conditions, and overlays (e.g., PiP windows, custom cursors, extension popups). Consider mobile-specific UI paradigms and long URLs/special schemes in the address bar.
-*   **VRP Patterns:** Address bar spoofing (long URLs, blob: origins, scheme placement), UI element overlay/redressing, dialog spoofing (PWA install prompts), state management flaws in UI updates.
-*   **Specific Areas:** Omnibox URL display, permission prompt handling, dialog rendering, custom cursor implementation, Picture-in-Picture UI, Share dialogs.
+*   **Focus:** Examine UI rendering logic, especially for security indicators (address bar, permission prompts, dialogs). Look for spoofing, obscuring, bypassing, or clickjacking vulnerabilities. Pay attention to interactions between UI elements.
+*   **Techniques & VRP Patterns:**
+    *   **Address Bar Spoofing:** Analyze omnibox display logic, especially on Android. Look for issues with long URLs, special schemes (`blob:`, non-http/s), delayed scheme display, or interaction with scrolling/tab switching (VRP: 40072988, 379652406, 343938078, 40064170, 40057561). Check URL formatting and elision (VRP: 40061104). See [url_formatting.md](url_formatting.md).
+    *   **Dialog/Prompt Obscuring:** Test interactions where one UI element can overlay another sensitive one. Examples: Picture-in-Picture (Video/Document) obscuring Permissions (PEPC), Autofill, FedCM prompts (VRP: 40058582, 342194497, 339654392). Extension popups obscuring permissions/screen share prompts (VRP: 40058873). FedCM bubbles obscuring Autofill prompts (VRP: 339481295, 340893685). Share dialogs rendering over browser UI (VRP: 40056848). Pop-up blocker notification overlapping fullscreen toast (VRP: issue 1218061 - implies cross-notification interaction). Android keyboard overlapping fullscreen toast (VRP: 1270988). Android text selection menu overlapping fullscreen toast (VRP: 1417137). See [fedcm.md](fedcm.md), [picture_in_picture.md](picture_in_picture.md), [permissions.md](permissions.md).
+    *   **Dialog/Prompt Spoofing:** Investigate PWA install prompts (origin display), external protocol dialogs (redirects), and chooser dialogs (Bluetooth/USB/Serial/HID) for origin confusion, especially with opaque origins or permission delegation (VRP: 40055515, 40061374, 40061373). Check if prompts render outside initiator windows (VRP: 341663594, 338233148). Check if prompts can be overlaid over other origins (VRP: 1404001, 1372911). Check if prompts can be accepted without visibility (VRP: 1371215). See [web_app_identity.md](web_app_identity.md), [webserial.md](webserial.md), [webusb.md](webusb.md), [bluetooth.md](bluetooth.md).
+    *   **Input/Interaction Hijacking:** Investigate techniques like custom cursors overlaying UI (VRP: 40057147, 1381087, 1376859), keyjacking focused prompts/dialogs (PaymentRequest - VRP: 1403539, Permissions - VRP: 1371215), or confusing cursor position (EyeDropper - VRP: 1466230). See [permissions.md](permissions.md), [payments.md](payments.md), [eye_dropper.md](eye_dropper.md).
+    *   **Fullscreen Issues:** Lack of fullscreen notification (VRP: 1311683, 1375785 - landscape, 1317234 - repeated exit/enter, 1270988 - overlaps, 1264561 - cancel), ability to prevent exit (Esc key blocked by Share API - VRP: 1467734, Keyboard Lock - VRP: 1385387, JS loops - VRP: 1453882).
+*   **Specific Areas:** Omnibox ([omnibox.md](omnibox.md)), Permission Prompts (PEPC) ([permissions.md](permissions.md)), Autofill UI ([autofill_ui.md](autofill_ui.md)), Download UI ([downloads.md](downloads.md)), PaymentRequest UI ([payments.md](payments.md)), FedCM UI ([fedcm.md](fedcm.md)), Web Share UI ([webshare.md](webshare.md)), Picture-in-Picture UI ([picture_in_picture.md](picture_in_picture.md)), Fullscreen Notifications, Custom Cursors ([input.md](input.md)?), Chooser Dialogs ([bluetooth.md](bluetooth.md), [webusb.md](webusb.md), [webserial.md](webserial.md)), PWA Install Prompts ([web_app_identity.md](web_app_identity.md)), External Protocol Dialogs.
 
-**2. Extension Security & API Abuse (High Likelihood):**
+**2. Extension & DevTools Security (High Likelihood, High VRP Value):**
 
-*   **Focus:** Analyze extension API security boundaries and permission models, especially privileged APIs (e.g., `chrome.debugger`, `chrome.tabs`, `chrome.downloads`, `chrome://policy`). Look for unintended API usage and sandbox escapes.
-*   **Techniques:** Validate extension interactions with privileged APIs, analyze policy bypasses, investigate extension interactions with back-forward cache and DevTools.
-*   **VRP Patterns:** Sandbox escapes via DevTools API (`chrome.devtools.inspectedWindow.reload`), policy manipulation (`chrome://policy`), misuse of privileged extension APIs, CSP bypasses via extensions.
-*   **Specific Areas:** `chrome.debugger` API, `chrome.tabs` API, `chrome.downloads` API, extension permission handling, extension policy enforcement, extension sandbox interactions.
+*   **Focus:** Analyze extension API security boundaries, permission models, and interactions with privileged browser functions or pages. Look for sandbox escapes, policy bypasses, and unintended API usage, particularly involving DevTools. See [extension_security.md](extension_security.md).
+*   **Techniques & VRP Patterns:**
+    *   **DevTools Interaction:** Exploiting `chrome.debugger` API for sandbox escapes (VRP: 40056776, 40060173, 40060283, 1121192, 1113558, 1059676, 798222, 798184) via methods like `Page.navigate` (to file://, privileged URLs), `Page.captureSnapshot`/`Page.captureScreenshot` (local file read - VRP: 1116444, 1116445, 1385343, 1409564), `Input.synthesizeTapGesture`, `Input.dispatchKeyEvent`, `Target.setAutoAttach`, `Target.sendMessageToTarget`. Race conditions during navigation or attachment (VRP: 1328108). Insufficient checks in `chrome.devtools.inspectedWindow.reload` (VRP: 41483638, 1473995, 1059577). See [extensions_debugger_api.md](extensions_debugger_api.md).
+    *   **Privileged Page Interaction:** Gaining script execution on `chrome://`, `devtools://`, or Web Store pages (VRP: 41483638, 1473995, 1490106, 1059676, 798184, 797497, 797500). Using WebUI message handlers insecurely (`chrome://policy` - VRP: 41483638). See [devtools.md](devtools.md).
+    *   **Policy Bypass:** Circumventing `runtime_blocked_hosts` (VRP: 40060283, 41493344) or other enterprise policies. See [policy.md](policy.md).
+    *   **Window Manipulation:** Obscuring active windows with inactive ones (VRP: 40058935), moving windows off-screen (VRP: 40058916) to enable keyboard interaction without user awareness. See [extensions_app_window.md](extensions_app_window.md)?
+    *   **Permission Escalation:** Leaking information or gaining capabilities beyond granted permissions (e.g., reading local files with only `downloads` - VRP: 1377165, 1385343, 1409564, 989078, reading other extension storage via `webview` `loadDataWithBaseUrl` - VRP: 1116448). Incorrect permission checks during updates (VRP: 1418104). Leaking tab info via `chrome.tabs.onUpdated` (VRP: 1306167). See [permissions.md](permissions.md).
+    *   **CSP Bypass:** Exploiting CSP validator flaws (`script-src-elem`/`script-src-attr` - VRP: 1288035). See [content_security_policy.md](content_security_policy.md).
+    *   **Side Panel Interaction:** Exploiting interactions with privileged side panel UIs (e.g., Companion/Lens - VRP: 1482786). See [side_panel.md](side_panel.md)?
+*   **Specific Areas:** `chrome.debugger` API ([extensions_debugger_api.md](extensions_debugger_api.md)), `chrome.devtools` APIs ([devtools.md](devtools.md)), `chrome.downloads` API (esp. `onDeterminingFilename`) ([downloads.md](downloads.md)), `chrome.tabs` API ([extensions_tabs_api.md](extensions_tabs_api.md)), `webview` tag, `chrome.storage`, `chrome.runtime.sendMessage`, Content Scripts ([extensions_content_verifier.md](extensions_content_verifier.md)?), Extension Manifest (CSP, permissions, `devtools_page`), `chrome://` pages (policy, downloads, flags, settings), `devtools://devtools`, Chrome Web Store pages.
 
-**3. Autofill & Input Handling Bypasses (High Likelihood):**
+**3. Autofill & Input Handling Bypasses (High Likelihood, Medium-High VRP Value):**
 
-*   **Focus:** Investigate bypasses for autofill security measures. Analyze input methods (taps, keyboard, EyeDropper API), timing attacks, and interactions with other browser features.
-*   **Techniques:** Analyze code handling user input and triggering autofill prompts. Consider tap-based attacks and input field cache protections.
-*   **VRP Patterns:** Bypasses using EyeDropper API, tap-based attacks on prompts, prompt rendering near/under cursor, space key input bypasses, input field cache vulnerabilities.
-*   **Specific Areas:** Autofill prompt logic, input event handling, EyeDropper API interactions, payment autofill flows.
+*   **Focus:** Investigate bypasses for autofill security measures (interaction requirements, visibility checks). Analyze input methods, timing attacks, and interactions with other browser features. Look for regressions. See [autofill.md](autofill.md).
+*   **Techniques & VRP Patterns:**
+    *   **Input Method Abuse:** Bypasses using EyeDropper API (VRP: 40065604, 40063230, 40058496), taps (double-taps, rendering near/under cursor - VRP: 40060134, 40058217, 40056900, 1426679, 1487440), space key input (VRP: 40056936), pointer lock (VRP: 40056870), or physical keyboard accessory (VRP: issuetracker.google.com/181313978). See [eye_dropper.md](eye_dropper.md), [pointer_lock.md](pointer_lock.md), [input.md](input.md)?
+    *   **Visibility Bypass:** Obscuring autofill prompt with PiP windows (VRP: 40058582), FedCM dialogs (VRP: 339481295, 340893685). Tricking visibility checks by manipulating input field cache or display (VRP: 1395164, 1358647, 1108181). Docking/clipping prompt in small windows/iframes (VRP: 1395164 - Android). See [autofill_ui.md](autofill_ui.md), [picture_in_picture.md](picture_in_picture.md), [fedcm.md](fedcm.md).
+    *   **Timing/State Issues:** Exploiting delays in prompt rendering after `mousedown` by moving the input field (VRP: 40058217, 40056900). Exploiting preview state text leaks (`scrollWidth`, font manipulation via `::first-line` or `@font-face` override - VRP: 1035058, 1035063, 1013882, 951487, 916838). Leaking selection via `scrollTop` in `<select>` (VRP: 1250850).
+    *   **Regressions:** Autofill bypasses frequently reappear after refactoring or fixes for related issues (VRP: 40063230 - regression of 1287364).
+*   **Specific Areas:** Autofill prompt logic (`AutofillPopupView`, input event handling), EyeDropper API ([eye_dropper.md](eye_dropper.md)), PaymentRequest API ([payments.md](payments.md)), Pointer Lock API ([pointer_lock.md](pointer_lock.md)), `<select>` element handling, interactions with PiP/FedCM.
 
-**4. IPC/Mojo Security (Medium Likelihood):**
+**4. IPC/Mojo Security (Medium Likelihood, High VRP Value - Sandbox Escape Focus):**
 
-*   **Focus:** Deeply analyze IPC messages and Mojo interfaces, especially those callable from less privileged contexts (renderer, extensions). Look for insufficient validation and access control.
-*   **Techniques:** Analyze interfaces handling file system access, user input simulation, privileged UI interaction, permission management, and DevTools APIs.
-*   **VRP Patterns:** Insufficient validation in Mojo interfaces, privilege escalation via IPC, sandbox escapes through IPC channels.
-*   **Relevant Files:** `mojo/public/interfaces/bindings/native_struct.mojom`, `mojo/public/cpp/bindings/message.h`, `mojo/core/node_channel.cc`.
+*   **Focus:** Deeply analyze IPC messages and Mojo interfaces, especially those callable from less privileged contexts (renderer, extensions). Look for insufficient validation, access control flaws, memory safety issues (UAF in `observer_list.h` - VRP: 40061678), and incorrect state handling. See [ipc.md](ipc.md), [mojo.md](mojo.md).
+*   **Techniques & VRP Patterns:**
+    *   **Insufficient Validation/Access Control:** Lack of checks on parameters or caller privileges (e.g., `StartDragging` allowing arbitrary mouse control - VRP: `VRP2.txt#1`). Incorrect handling of messages (e.g., Browser handling renderer-intended `ACCEPT_BROKER_CLIENT` - VRP: VRP2.txt#370). Lack of origin checks (e.g., `PushMessaging` API - VRP: 1275626; `ContentIndex` - VRP: 1263530, 1263528).
+    *   **Privilege Escalation:** Gaining higher privileges via compromised renderer sending crafted messages.
+    *   **Sandbox Escapes:** Directly escaping the sandbox through vulnerable IPC channels.
+    *   **State Confusion:** Exploiting race conditions or dangling pointers in IPC state management (e.g., `PermissionRequestManager` - VRP: 1424437).
+*   **Relevant Files/Interfaces:** `mojo/public/interfaces/bindings/native_struct.mojom`, `mojo/public/cpp/bindings/message.h`, `mojo/core/node_channel.cc`, `IProcessLauncher`/`GoogleUpdate.ProcessLauncher` (VRP: 340090047), interfaces related to file system access, user input simulation, privileged UI, permissions, DevTools.
 
-**5. Web API & Feature Security (Medium Likelihood):**
+**5. Web API & Feature Security (Medium Likelihood, Medium-High VRP Value):**
 
-*   **Focus:** Investigate newer or complex web platform features (WebTransport, WebCodecs, WebGPU, WebXR, FedCM, Web Share, Web Bluetooth, Web USB, Web Serial, Portals, File System API, Push Messaging API, Translate API). Look for design or implementation flaws and interactions with security boundaries.
-*   **Techniques:** Analyze API implementations, permission models, and interactions with other browser features. Consider unusual protocols and CSP bypasses related to these APIs. Test on Android WebView.
-*   **VRP Patterns:** Origin spoofing in dialogs related to Web APIs, SameSite cookie bypasses via Web Share API, UI obscuration by FedCM prompts/PiP windows, permission delegation issues in chooser dialogs.
-*   **Specific APIs:** WebTransport, WebCodecs, WebGPU, WebXR, FedCM, Web Share API, Web Bluetooth, Web USB, Web Serial, Portals, File System API, Push Messaging API, Translate API.
+*   **Focus:** Investigate newer or complex web platform features, paying attention to their security models, interactions, and potential for origin confusion or policy bypass. Also consider older but complex features.
+*   **Techniques & VRP Patterns:**
+    *   **Origin Spoofing/Confusion:** Dialog origin issues related to Web APIs (Bluetooth, USB, Serial, HID - VRP: 40061374, 40061373). FedCM prompts with opaque origins (VRP: 340893685). Document PiP origin issues (VRP: 40063068, 40062959, 1429246, 1450728). FencedFrames interaction with PiP (VRP: 40062954). Portal API URL spoof after crash (VRP: 40064170). External protocol dialogs via redirects (VRP: 40055515). javascript:/data: URL origin confusion (VRP: 40059251, VRP2.txt#173). Blob URL origin issues (VRP: 1069246, 705778). See [webid.md](webid.md), [fedcm.md](fedcm.md), [picture_in_picture.md](picture_in_picture.md), [fenced_frames.md](fenced_frames.md), [portals.md](portals.md).
+    *   **Policy Bypass (CSP, SameSite, Sandbox):** SameSite cookie bypasses (Web Share API VRP: issuetracker.google.com/303661203; BackgroundFetch VRP: 1244289; redirects VRP: 698492; Service Worker FetchEvent VRP: 1115438; Android Intents VRP: 1375132). CSP bypasses (Service Worker intercept VRP: 598077; `about:blank` navigation VRP: 996741; `blob:` navigation VRP: 1115628; `filesystem:` navigation VRP: 1116446; `javascript:` in `srcdoc` VRP: 1006188). Iframe Sandbox bypasses (`allow-popups-to-escape-sandbox` VRP: 40069622, 40057525; `allow-downloads` VRP: 40060695; `intent://` URLs VRP: 1365100; `javascript:` links with `window.opener` VRP: 1017879). See [content_security_policy.md](content_security_policy.md), [iframe_sandbox.md](iframe_sandbox.md), [service_workers.md](service_workers.md), [background_fetch.md](background_fetch.md).
+    *   **Information Leaks:** Cross-origin URL leaks (Fetch API `no-cors` on iOS VRP: 803830; redirects in Performance API VRP: 40054148; WebGL errors VRP: 658029; redirects in `<script>` errors/CSP reports VRP: 1087902). Cross-origin size leaks (BackgroundFetch VRP: 1247376, 1260649, 1267311; redirects/Range requests VRP: 990849, 1260649, 1270469). Cross-origin pixel data/timing leaks (Canvas `drawImage` VRP: 1093099, 781017, 686498; CSS filters VRP: 716057). History/Visited link leaks (SoftNav+paint VRP: 1459093; CSS Paint API VRP: 680214; CSS transitions VRP: 1211002; `history.length` VRP: 1208614; `document.baseURI` VRP: 1329654). Environment variable leaks (`showSaveFilePicker`/`downloads.download` VRP: 1247389, 1310461, 1322058, 1310462). Keystroke timing leaks (VRP: 1315899). SharedWorker cross-origin access (VRP: 670211). See [performance_apis.md](performance_apis.md).
+    *   **API Misuse/Interaction:** PaymentRequest API bypasses (VRP: 40072274). Push Messaging API flaws (VRP: 1275626). Content Index API origin checks (VRP: 1263530, 1263528). Scroll inference via Text Fragments (VRP: 1400345). File System Access API interaction with downloads (VRP: 1428743). Reading local files via `registerProtocolHandler` (VRP: 971188). See [push_messaging.md](push_messaging.md), [file_system_access.md](file_system_access.md).
+*   **Specific APIs:** WebTransport, WebCodecs ([webcodecs.md](webcodecs.md)), WebGPU ([webgpu.md](webgpu.md)), WebXR ([webxr.md](webxr.md)), FedCM ([fedcm.md](fedcm.md)), Web Share API ([webshare.md](webshare.md)), Web Bluetooth ([bluetooth.md](bluetooth.md)), Web USB ([webusb.md](webusb.md)), Web Serial ([webserial.md](webserial.md)), Portals ([portals.md](portals.md)), File System API ([file_system_access.md](file_system_access.md)), Push Messaging API ([push_messaging.md](push_messaging.md)), Translate API ([translation_ui.md](translation_ui.md)?), PaymentRequest API ([payments.md](payments.md)), BackgroundFetch API ([background_fetch.md](background_fetch.md)), Content Index API, Text Fragments, FencedFrames ([fenced_frames.md](fenced_frames.md)), Service Workers ([service_workers.md](service_workers.md)), SharedWorker ([worker_threads.md](worker_threads.md)?), `registerProtocolHandler`.
 
-**6. General Code Analysis Techniques:**
+**6. Filesystem & Scheme Handling (Medium Likelihood, Variable VRP Value):**
 
-*   **Fuzzing:** Use fuzzers (e.g., libFuzzer) to test APIs and file parsers, focusing on complex formats and stateful interactions.
-*   **Code Review:** Manually review code changes, especially in security-sensitive areas (IPC, process isolation, permissions, input validation). Look for common vulnerabilities (TOCTOU, overflows, UAF, origin issues).
-*   **Variant Analysis:** Search for similar patterns after finding a vulnerability. Use tools like CodeQL.
-*   **Exploit Knowledge:** Study exploit techniques to inform code review and fuzzing.
-*   **Corner Cases & Regressions:** Check for unexpected behavior in corner cases and regressions of fixed bugs.
-*   **Mobile Testing:** Test on mobile platforms (Android WebView, Chrome OS) for platform-specific vulnerabilities.
-*   **File Type Handling:** Analyze handling of file types that can execute code or leak data (e.g., .url, MSI).
-*   **Unusual Protocols:** Scrutinize non-standard URL schemes (`intent://`, `javascript:`, `file://`, `chrome://`).
-*   **CSP Analysis:** Examine CSP implementations for bypasses and weaknesses.
-*   **Complex Feature Interactions:** Analyze interactions between different components for logic flaws.
-*   **User Interaction as Vector:** Consider user actions (clicks, taps, keyboard) as potential vulnerability triggers.
-*   **Data Validation in UI:** Validate data used in UI elements to prevent injection attacks.
-*   **SameSite Cookie Handling:** Thoroughly test SameSite cookie handling in complex scenarios.
-*   **Android-Specific Checks:** Pay attention to Android-specific features and APIs.
+*   **Focus:** Analyze how the browser handles file interactions, special URL schemes, and downloads, especially regarding security boundaries and information leakage.
+*   **Techniques & VRP Patterns:**
+    *   **Local File Access/Disclosure:** Reading local files via extensions (DevTools interaction VRP: 1116445, 1116444, 1385343, 1409564; `downloads` permission + FSA VRP: 1428743; `input[type=file]` + symlinks VRP: 1378484, 1381634; `sourceMappingURL` VRP: 1349146, 1419604, 1429241; `registerProtocolHandler` VRP: 971188; `.url` files VRP: 1303486; `SharedWorker` VRP: 670211). Information disclosure via file picker defaulting (`input[type=file]` reading all files VRP: 756268). Android private data access via intents (VRP: 1198142). FencedFrames loading local directories (VRP: 1454937). See [downloads.md](downloads.md), [file_system_access.md](file_system_access.md).
+    *   **Special Scheme Handling:** Bypasses involving `intent://` (VRP: 40064598, 1365100, 1375132), `android-app://` (VRP: 1092025), `javascript:` (Origin confusion VRP: 40059251, VRP2.txt#173; CSP bypass VRP: 1006188; Self-XSS VRP: 850824, 738694), `file://` (Navigation bypasses VRP: 40060173; Reading via extensions VRP: see above; UNC paths in `sourceMappingURL` VRP: 1342722, 1379985), `chrome-untrusted://` (XSS via parsing VRP: 40057777), `fido://` (Deep link hijacking VRP: issuetracker.google.com/issues/370176231). See [intents.md](intents.md)?
+    *   **Download Security:** Origin spoofing in download UI (VRP: 1157743, 1281972, 1499408, 916831). Masking file types (e.g., `.jpg.scf` VRP: 1228653; `%%` bypass VRP: 1378895). Bypassing dangerous file checks via DevTools (VRP: 798217). Bypassing Safe Browsing via large data URIs (VRP: 1416794). Silent downloads/overwrites (`showSaveFilePicker` + Enter key VRP: 1243802; Web Share API VRP: 1297692). Sandbox bypass (`allow-downloads` VRP: 40060695; `noopener` downloads VRP: 1105523). History manipulation leading to fake downloads (VRP: 1513412). See [downloads.md](downloads.md), [safe_browsing_service.md](safe_browsing_service.md).
+*   **Specific Areas:** File Input (`<input type="file">`), File System Access API ([file_system_access.md](file_system_access.md)), Download UI & logic (`chrome.downloads`, Safe Browsing integration), `registerProtocolHandler`, URL parsing/handling for various schemes ([url_utilities.md](url_utilities.md)?), `sourceMappingURL` handling.
 
-**7. Specific UI Element Analysis:**
+**7. Installer/Updater Security (Windows/macOS) (Medium Likelihood, High VRP Value - EoP Focus):**
 
-*   **Focus:** Target UI elements frequently exploited: address bar, permission prompts, download dialogs, security interstitials.
-*   **Techniques:** Analyze rendering and interaction logic. Look for manipulation of appearance or behavior to mislead users.
-*   **Specific Elements:** Address bar (Omnibox), permission prompts (PEPC), download dialogs, security interstitials, external protocol dialogs, Web Share dialog, FedCM prompts, Picture-in-Picture windows.
+*   **Focus:** Analyze installer and updater components (e.g., Google Update Service, Keystone) for privilege escalation vulnerabilities, especially focusing on file operations, registry interactions, and IPC/COM interfaces on Windows/macOS. See [installer_security.md](installer_security.md).
+*   **Techniques & VRP Patterns:**
+    *   **Insecure File Operations:** Arbitrary file creation/write/delete in user-writable or predictable locations (`C:\Windows\Temp\`, `%APPDATA%\Local`, `C:\ProgramData\Google\Update\Log`, `/tmp/`) often exploitable via symlinks/hardlinks/junctions (VRP: 1317661, 1183137, 704138, VRP2.txt#1259, VRP2.txt#4175, VRP2.txt#1481). Race conditions during file caching or updates (VRP: 1152971). Lack of symlink checks during extraction/installation (VRP: VRP2.txt#914).
+    *   **Insecure Registry Operations (Windows):** Deleting symlinked registry keys leading to deletion of protected keys (`HKCU\Software\Policies`) (VRP: VRP2.txt#8739).
+    *   **Insecure IPC/COM (Windows):** COM objects accessible to low-privilege users exposing dangerous methods (`GoogleUpdate.ProcessLauncher` + Session Moniker VRP: 340090047).
+    *   **Code Execution/Logic Flaws:** Lack of code signing checks during updates/installation (VRP: VRP2.txt#914). Incorrect permission inheritance or handling (`AlwaysInstallElevated` VRP: VRP2.txt#8739).
+*   **Specific Components:** Google Update Service (Windows), Keystone (macOS), Chrome/Chromium Installer/Uninstaller (Windows/macOS), Crashpad installer actions. Relevant paths: `C:\Windows\Temp\`, `%APPDATA%\Local`, `C:\ProgramData\Google\Update\Log`, `/tmp/com.google.Keystone`, `C:\Program Files (x86)\Google\Update\Download`.
 
-By focusing on these areas and techniques, and by continuously updating the wiki with new findings and VRP data insights, we can improve our Chromium security research effectiveness.
+**8. General Code Analysis Techniques:**
 
-**Wiki Pages (Areas for Wiki Pages - Order by Likelihood/VRP Value - *Adjust Dynamically*):**
+*   **Fuzzing:** Use fuzzers (e.g., libFuzzer) to test APIs, file parsers (PDF - VRP: 40059101), IPC interfaces, and complex media C++ codecs (WebCodecs etc.). Focus on edge cases and stateful interactions.
+*   **Code Review:** Manually review code changes, especially in security-sensitive areas (IPC/Mojo, process isolation, permissions, input validation, scheme handling, UI rendering). Look for common C++ vulnerabilities (TOCTOU, overflows, UAF - VRP: 40061678, type confusion - VRP: 1337607), logic flaws, and insecure assumptions. Check error handling and resource management (leaks).
+*   **Variant Analysis:** After finding a vulnerability, search for similar patterns across the codebase using tools like CodeQL or manual grep/search. Look for incomplete fixes or related logic flaws.
+*   **Exploit Knowledge:** Study public exploit techniques (e.g., Windows EoP via file operations, browser exploitation techniques) to inform code review and identify potential weaknesses.
+*   **Corner Cases & Regressions:** Explicitly test edge cases, error conditions, and interactions between features. Verify that previously fixed bugs (especially in complex areas like Autofill) have not regressed.
+*   **Platform-Specific Testing:** Test on various platforms (Windows, macOS, Linux, Android, ChromeOS, iOS), paying attention to platform-specific APIs, behaviors (e.g., Android Intents, macOS Keychain/XPC), and UI paradigms. Test Android WebView specifically.
 
-This list prioritizes components based on a combination of the likelihood of finding a vulnerability and the potential VRP reward. This aims to balance the probability of success with the potential payout.
+**Wiki Pages (Prioritized List - *Adjust Dynamically Based on Research*):**
 
-*   **Chromium > UI > Browser > Omnibox (`omnibox.md`)**: Highest associated VRP award: $8,500. Focus on URL display logic, spoofing vulnerabilities (especially on mobile using long `blob:` URLs, or schemes placed later in the URL), and interaction with page content. **Specific areas to investigate:** Android: URL spoofing in address bar if scheme is later in URL, and any new bypasses.
-*   **Chromium > Extensions (`extension_security.md`)**: Highest associated VRP award: $7,000+. Investigate permissions models, interaction with DevTools APIs (`chrome.devtools.inspectedWindow.reload`), policy manipulation (`chrome://policy`), and potential sandbox escapes (especially via DevTools or insufficient checks). **Specific areas to investigate:** Sandbox escape from extensions due to insufficient checks in chrome.devtools.inspectedWindow.reload and chrome://policy, and any new bypasses.
-*   **Chromium > Internals > Sandbox > SiteIsolation (`site_isolation.md`)**: Highest associated VRP award: $20,000. Focus on origin confusion (especially with `javascript:`/`data:` URLs), cross-origin interactions in iframes/windows, and sandbox escape vectors. **Specific areas to investigate:** Browser-side origin confusion for javascript/data URLs opened in a new window/tab by cross-origin iframe, and any bypasses related to the checks.
-*   **Chromium > Mobile > WebView (`android_webview_app_defined_websites.md`)**: Highest associated VRP award: $15,000. Investigate interactions between iframes and the top document, particularly regarding JavaScript execution (`window.open()`, `target="_blank"`) and navigation on Android. **Specific areas to investigate:** iframe on different origin can execute arbitrary JavaScript in top document via window.open() or links with _blank target.
-*   **Chromium > UI > Browser > Autofill > Payments (`payments.md`)**: Highest associated VRP award: $10,000. Analyze input methods (taps, EyeDropper API) and timing conditions that could bypass autofill security prompts for payment information. **Specific areas to investigate:** Page can obtain autofill data with two consecutive taps using EyeDropper API (bypass of multiple prior fixes), and any new bypasses.
-*   **Chromium > UI > Browser > WebApps (`web_app_identity.md`):** Highest associated VRP award: $5,000. Focus on PWA installation dialogs, origin display, and potential for spoofing or misrepresentation.
-*   **Chromium > Blink > Forms > Autofill (`autofill.md`):** Highest associated VRP award: $5,000. Analyze the Blink-level implementation of autofill, focusing on data handling and interaction with form elements.
-*   **Chromium > Blink > Media > PictureInPicture**: Highest associated VRP award: $4,000. Focus on Document PiP can spoof top-level page origin, show attacker content in PiP window, open PiP windows from iframes.
-*   **Chromium > UI > Browser > Permissions > Prompts**: Highest associated VRP award: $4,000. Focus on PEPC prompt can be obscured by Video/Document PiP window.
-*   **Chromium > Blink > SecurityFeature > IFrameSandbox**: Highest associated VRP award: $3,000. Focus on Iframe sandbox allow-popups-to-escape-sandbox bypass.
-*   **Chromium > Blink > Identity > FedCM**: Highest associated VRP award: $3,000. Focus on Autofill prompt can be obscured by FedCM bubble dialog.
-*   **Chromium > Platform > Extensions > API**: Highest associated VRP award: $3,000. Focus on chrome.debugger API bypasses the runtime_blocked_hosts cookie protection.
-*   **Chromium > Mobile > Intents**: Highest associated VRP award: $3,000. Focus on intent:// restrictions bypassed via firebase dynamic links.
-*   **Chromium > Platform > Extensions > API**: Highest associated VRP award: $3,000. Focus on Extension can obscure active window with an inactive window, user can interact with sensitive UI using keyboard without being aware.
-*   **Chromium > Platform > Extensions > API**: Highest associated VRP award: $3,000. Focus on Extension can move window off screen, user can interact with sensitive UI using keyboard without being aware.
-*   **Chromium > Blink > Input > PointerLock**: Highest associated VRP award: $3,000. Focus on Pointer lock can be used to bypass mouse movement/keyboard input requirements for autofill.
-*   **Chromium > Blink > SecurityFeature > IFrameSandbox**: Highest associated VRP award: $3,000. Focus on Cross-origin iframe can navigate top window to different site via same-site open redirect or XSS redirect.
-*   **Chromium > Blink > Serial**: Highest associated VRP award: $3,000. Focus on Device chooser dialogs do not show origin if initiator origin is opaque.
-*   **Chromium > Privacy**: Highest associated VRP award: $3,000. Focus on Page can obtain autofill data with two consecutive taps with minimal user awareness, bypasses issue 1240472 and issue 1279268 fixes.
-*   **Chromium > UI > Browser > Autofill**: Highest associated VRP award: $3,000. Focus on After refactor, page can use EyeDropper API to bypass mouse movement/keyboard input requirements for autofill (regression of issue 1287364).
-*   **Chromium > Blink > USB**: Highest associated VRP award: $3,000. Focus on Android: Bluetooth and USB chooser dialogs do not use top-level origin with permission delegation.
-*   **Chromium > Privacy**: Highest associated VRP award: $3,000. Focus on Page can cause autofill prompt to render near cursor in order to bypass mouse movement/keyboard input requirements for autofill (Bypass of issue 1240472 fix).
-*   **Chromium > Privacy**: Highest associated VRP award: $3,000. Focus on Page can cause autofill prompt to render under cursor in order to bypass mouse movement/keyboard input requirements for autofill.
-*   **Chromium > Blink > SecurityFeature > COOP**: Highest associated VRP award: $3,000. Focus on crossOriginIsolated bypass.
-*   **Chromium > Blink > SecurityFeature > IFrameSandbox**: Highest associated VRP award: $3,000. Focus on Sandbox bypass "allow-downloads".
-*   **Chromium > Blink > Identity > FedCM**: Highest associated VRP award: $3,000. Focus on Autofill prompt can be obscured by FedCM bubble dialog.
-*   **Chromium > Blink > Forms > Color**: Highest associated VRP award: $2,000. Focus on Page can use EyeDropper API to bypass mouse movement/keyboard input requirements for autofill (bypass of issue 1240472 fix).
-*   **Chromium > UI > Browser > Navigation**: Highest associated VRP award: $2,000. Focus on Origin spoof in external protocol dialogs via server-side redirect to external protocol.
-*   **Chromium > Blink > Input**: Highest associated VRP award: $2,000. Focus on Compromised renderer can set custom cursor up to 1024px over browser UI and other windows.
-*   **Chromium > Blink > Portals**: Highest associated VRP award: $2,000. Focus on Portals URL spoof after crash.
-*   **Chromium > Internals > Sandbox > SiteIsolation**: Highest associated VRP award: $2,000. Focus on Leaking window.length without opener reference.
-*   **Chromium > UI > Browser > SafeBrowsing (`safe_browsing_service.md`):** Highest associated VRP award: $2,000. Analyze security interstitial bypasses, interaction with DevTools, and handling of potentially malicious URLs.
-*   **Chromium > Blink > Identity > FedCM**: Highest associated VRP award: $2,000. Focus on FedCM prompt bubble can be obscured by Video/Document PiP window, allow for hidden login.
-*   **Chromium > Blink > Identity > FedCM**: Highest associated VRP award: $2,000. Focus on FedCM prompts do not show origin if initiator origin is opaque.
-*   **Chromium > Blink > DataTransfer**: Highest associated VRP award: $1,000. Focus on SameSite strict cookies bypass/cross-origin download via `e.dataTransfer.setData('DownloadURL', ...`.
-*   **Chromium > UI > Security (Use Subcomponent) > UrlFormatting**: Highest associated VRP award: $1,000. Focus on Web Share dialog URL is incorrectly elided in Android (ineffective fix for issue 1329541).
-*   **Chromium > Blink > Payments**: Highest associated VRP award: $1,000. Focus on Bypass PaymentRequest.show() calls after the first.
-*   **Chromium > UI > Browser > Navigation**: Highest associated VRP award: $1,000. Focus on documentPictureInPicture UI spoof via opener.
-*   **Chromium > Blink > Media > PictureInPicture**: Highest associated VRP award: $1,000. Focus on Document PiP window can be resized and moved by compromised renderer, user can interact with sensitive UI using keyboard without being aware.
-*   **Chromium > Internals > Sandbox > SiteIsolation**: Highest associated VRP award: $1,000. Focus on URL Spoof after crash.
-*   **Chromium > UI > Browser > TopChrome > SidePanel**: Highest associated VRP award: $1,000. Focus on heap-use-after-free in observer_list.h triggered via Notes/Annotation feature.
-*   **Chromium > UI > Browser > Autofill**: Highest associated VRP award: $1,000. Focus on Page can use space key input to cause autofill prompt to render under cursor, bypasses mouse movement/designated keyboard input requirements for autofill.
-*   **Chromium > Blink > WebShare**: Highest associated VRP award: $1,000. Focus on Share dialog on Windows can render over address bar, window controls.
-*   **Chromium > Internals > Plugins > PDF (`plugin_security.md`):** Highest associated VRP award: $500. Examine PDFium interactions, thumbnail generation (`getThumbnail`), and potential information leaks (e.g., page count).
-*   **Chromium > Platform > Extensions**: Highest associated VRP award: $500. Focus on XSS from chrome-untrusted://new-tab-page URL parsing.
-*   **Chromium > Mobile > Intents**: Highest associated VRP award: $0. Focus on Android app install spoof via intent.
-*   **Chromium > Blink > PerformanceAPIs**: Highest associated VRP award: $0. Focus on performance API reveals information about redirects (XS-Leak).
-*   **Chromium > Infra > LUCI**: Highest associated VRP award: $0. Focus on Clickjacking of chromium infra pages.
+This list prioritizes components based on a combination of VRP value and frequency. Links point to existing or newly created pages.
 
-## Additional Focus Areas (Lower Priority, Order by Likelihood/VRP Value - *Adjust Dynamically*)
+*   **High VRP / High Frequency:**
+    *   Chromium > Internals > Sandbox > SiteIsolation ([site_isolation.md](site_isolation.md)) - VRP: $20,000
+    *   Chromium > Installer & Updater (Windows/macOS) ([installer_security.md](installer_security.md)) - VRP: $20,000+ (implied by multiple EoP reports)
+    *   Chromium > Mobile > WebView ([android_webview_app_defined_websites.md](android_webview_app_defined_websites.md)) - VRP: $15,000
+    *   Chromium > UI > Browser > Autofill > Payments ([payments.md](payments.md)) - VRP: $10,000
+    *   Chromium > UI > Browser > Omnibox ([omnibox.md](omnibox.md)) - VRP: $8,500
+    *   Chromium > Extensions ([extension_security.md](extension_security.md)) - VRP: $7,000+
+    *   Chromium > UI > Browser > WebApps ([web_app_identity.md](web_app_identity.md)) - VRP: $5,000
+    *   Chromium > Blink > Forms > Autofill ([autofill.md](autofill.md)) - VRP: $5,000
+    *   Chromium > Blink > Media > PictureInPicture ([picture_in_picture.md](picture_in_picture.md)) - VRP: $4,000
+    *   Chromium > UI > Browser > Permissions > Prompts ([permissions.md](permissions.md)) - VRP: $4,000
+*   **Medium VRP / Medium Frequency:**
+    *   Chromium > Blink > SecurityFeature > IFrameSandbox ([iframe_sandbox.md](iframe_sandbox.md)) - VRP: $3,000
+    *   Chromium > Blink > Identity > FedCM ([fedcm.md](fedcm.md)) - VRP: $3,000
+    *   Chromium > Platform > Extensions > API ([extensions_api.md](extensions_api.md)?) - VRP: $3,000
+    *   Chromium > Mobile > Intents ([intents.md](intents.md)) - VRP: $3,000
+    *   Chromium > Blink > Input > PointerLock ([pointer_lock.md](pointer_lock.md)) - VRP: $3,000
+    *   Chromium > Blink > Serial ([webserial.md](webserial.md)) - VRP: $3,000
+    *   Chromium > Privacy ([privacy.md](privacy.md)?) - VRP: $3,000
+    *   Chromium > Blink > USB ([webusb.md](webusb.md)) - VRP: $3,000
+    *   Chromium > Blink > SecurityFeature > COOP ([coop.md](coop.md)) - VRP: $3,000
+    *   Chromium > Blink > Forms > Color ([color_input.md](color_input.md)?) - VRP: $2,000
+    *   Chromium > UI > Browser > Navigation ([navigation.md](navigation.md)?) - VRP: $2,000
+    *   Chromium > Blink > Input ([input.md](input.md)?) - VRP: $2,000
+    *   Chromium > Blink > Portals ([portals.md](portals.md)) - VRP: $2,000
+    *   Chromium > UI > Browser > SafeBrowsing ([safe_browsing_service.md](safe_browsing_service.md)) - VRP: $2,000
+*   **Lower VRP / Lower Frequency:**
+    *   Chromium > Blink > DataTransfer ([drag_and_drop.md](drag_and_drop.md)?) - VRP: $1,000
+    *   Chromium > UI > Security > UrlFormatting ([url_formatting.md](url_formatting.md)) - VRP: $1,000
+    *   Chromium > UI > Browser > TopChrome > SidePanel ([side_panel.md](side_panel.md)?) - VRP: $1,000
+    *   Chromium > Blink > WebShare ([webshare.md](webshare.md)) - VRP: $1,000
+    *   Chromium > Internals > Plugins > PDF ([plugin_security.md](plugin_security.md)) - VRP: $500
+    *   Chromium > Blink > PerformanceAPIs ([performance_apis.md](performance_apis.md)) - VRP: $0
+    *   Chromium > Infra > LUCI ([infra_luci.md](infra_luci.md)) - VRP: $0
 
-These did not rank highly, but are areas to be aware of during research. However, they remain areas for potential investigation.
+**Additional Focus Areas (Lower Priority / Cross-Cutting):**
 
-*   **Mojo:** Deeply analyze Inter-Process Communication (IPC) messages, especially Mojo interfaces, handled by the browser process, GPU process, and utility processes. Look for messages/interfaces callable from less privileged contexts (renderer, extensions) that lack sufficient validation. Pay close attention to interfaces that handle file system access, simulate user input (like `StartDragging` with specific parameters), interact with privileged UI, manage permissions, or interact with DevTools APIs (`chrome.devtools.inspectedWindow.reload`, `debugger`). Insufficient checks here are a common source of sandbox escapes and privilege escalation. Relevant files include: `mojo/public/interfaces/bindings/native_struct.mojom`, `mojo/public/cpp/bindings/message.h`, `mojo/core/node_channel.cc`.
-*   **Web Bluetooth (`bluetooth.md`):** Focus on the security of the Web Bluetooth API, including device pairing and data transfer. Relevant files include: `bluetooth.md`, `content/browser/bluetooth/web_bluetooth_service_impl.cc`, `chrome/browser/ui/views/bluetooth/bluetooth_chooser_controller.cc`.
-*   **Web USB (`webusb.md`):** Investigate the security of the Web USB API, including device access controls and data transfer. Relevant files include: `webusb.md`, `content/browser/usb/usb_chooser_context.cc`, `chrome/browser/ui/views/usb/usb_chooser_controller.cc`.
-*   **Web Serial (`webserial.md`):** Focus on the security of the Web Serial API, including device access controls and data transfer integrity. Relevant files include: `webserial.md`, `content/browser/serial/serial_port_underlying_sink.cc`, `third_party/blink/renderer/modules/serial/serial.cc`.
-*   **Web Codecs (`webcodecs.md`):** Investigate the security of the Web Codecs API, including vulnerabilities in encoding/decoding complex or malformed media streams. Relevant files include: `webcodecs.md`, `third_party/blink/renderer/modules/webcodecs/image_decoder_external.cc`, `third_party/blink/renderer/modules/webcodecs/video_encoder.cc`.
-*   **WebGPU (`webgpu.md`):** Focus on the security of the WebGPU API, including memory management in the GPU process, shader execution sandboxing, and potential timing attacks. Relevant files include: `webgpu.md`, `gpu/command_buffer/service/webgpu_decoder.cc`, `third_party/dawn/src/dawn/native/Device.cpp`. *(File paths adjusted for common locations)*
-*   **WebXR (`webxr.md`):** Investigate the security of the WebXR API, including device access permissions, sensor data handling, and rendering isolation. Relevant files include: `webxr.md`, `content/browser/xr/service/xr_session.cc`, `device/vr/public/mojom/vr_service.mojom`. *(File paths adjusted for common locations)*
-*   **UI Spoofing (High Likelihood):** Carefully examine code responsible for rendering UI elements, especially security indicators (address bar, permission prompts). Look for logic that can be manipulated to display incorrect or misleading information to the user. Consider edge cases, race conditions, and interactions with other UI elements (e.g., Picture-in-Picture windows, custom cursors, extension popups).
-*   **Extension API Abuse (High Likelihood):** Thoroughly analyze the security boundaries and permission models of extension APIs, especially those that grant broad access or interact with privileged browser functions (e.g., `chrome.debugger`, `chrome.tabs`, `chrome.downloads`). Look for ways to bypass intended restrictions or abuse APIs in unintended ways.
-*   **Autofill Bypasses (High Likelihood):** Investigate potential bypasses for autofill security measures, focusing on input methods (e.g., taps, keyboard input, EyeDropper API), timing attacks, and interactions with other browser features. Pay close attention to code that handles user input and determines when to trigger autofill prompts.
-*   **Mojo Interface Vulnerabilities (Medium Likelihood):** When analyzing Mojo interfaces, pay close attention to validation and access control. Insufficient validation of Mojo interfaces and improper access control can lead to privilege escalation and other vulnerabilities.
-*   **Check for unexpected behavior in corner cases:** Many vulnerabilities arise from unexpected behavior in corner cases. Always consider how the code will behave in unusual or unexpected situations.
-*   **Look for regressions:** Many vulnerabilities are regressions of previously fixed bugs. When analyzing code, be sure to check for regressions of previously fixed bugs.
-*   **Investigate unusual protocols:** Scrutinize the handling of non-standard URL schemes like `intent://`, `javascript:`, `file://`, and `chrome://`. Pay close attention to how these schemes interact with security boundaries and origin checks.
-*   **Explore CSP bypasses:** Thoroughly examine CSP implementations, looking for ways to circumvent or weaken the policy. Focus on interactions with iframes, service workers, and other browser features that might introduce vulnerabilities.
-*   **Test Android WebView:** Given the prevalence of WebView-related vulnerabilities, prioritize testing on this platform. Pay attention to how WebView handles JavaScript execution, navigation, and interactions with native Android APIs.
-*   **Analyze specific UI elements:** Focus on specific UI elements that have been frequent targets of attacks, such as the address bar, permission prompts, and download dialogs. Look for ways to manipulate their appearance or behavior to mislead users.
-*   **Examine specific APIs:** Investigate the security implications of specific APIs that have been identified as potential sources of vulnerabilities, such as the EyeDropper API, the Web Share API, and the chrome.debugger API.
-*   **Consider file type handling:** Pay close attention to how the browser handles different file types, especially those that can be used to execute code or leak sensitive information (e.g., .url files, MSI installers).
+These areas appeared in VRP reports but might be secondary or aspects of broader categories.
 
-*   **Be aware of potential issues with the Translate API:** The Translate API, while useful for translation purposes, can also be abused to bypass security checks and introduce XSS vulnerabilities.
-*   **Be aware of potential issues with the File System API:** The File System API, while useful for legitimate purposes, can also be abused to bypass security restrictions and access sensitive information.
-*   **Be aware of potential issues with the Push Messaging API:** The Push Messaging API, while useful for legitimate purposes, can also be abused to leak subscription information or spoof messages.
-*   **Be aware of potential issues with the Chrome Enterprise MSI installer:** The Chrome Enterprise MSI installer, while useful for enterprise deployments, can also be abused to elevate privileges or execute arbitrary code.
-*   **Be aware of potential issues with the Web Share API:** The Web Share API, while useful for sharing content, can also be abused to bypass SameSite cookie restrictions or leak sensitive information.
-*   **Be aware of potential issues with the chrome.downloads API:** The chrome.downloads API, while useful for managing downloads, can also be abused to bypass security restrictions and access sensitive information.
-*   **Be aware of potential issues with the Portal API:** The Portal API, while useful for creating seamless transitions between pages, can also be abused to bypass security restrictions or spoof the origin.
-*   **Be aware of potential issues with the Mojo IPC mechanism:** The Mojo IPC mechanism, while useful for inter-process communication, can also be abused to bypass security restrictions or leak sensitive information.
-*   **Be aware of potential issues with the custom cursor implementation:** The custom cursor implementation, while useful for customizing the user experience, can also be abused to overlay and obscure parts of the browser UI, potentially leading to clickjacking or other attacks.
-*   **Be aware of potential issues with the SameSite cookie implementation:** The SameSite cookie implementation can be bypassed in certain scenarios, such as when using the BackgroundFetch API or the Web Share API.
-*   **Be aware of potential issues with the Android intent mechanism:** The Android intent mechanism, while useful for inter-application communication, can also be abused to bypass security restrictions or spoof the origin.
-*   **Be aware of potential issues with the handling of file types:** The handling of file types, especially those that can execute code or leak sensitive information, can be a source of vulnerabilities.
-*   **Be aware of potential issues with the handling of long URLs:** The handling of long URLs, especially those with specific characters or schemes, can be a source of vulnerabilities.
-*   **Be aware of potential issues with the handling of untrusted input in UI elements:** The handling of untrusted input in UI elements, such as dialog titles and button labels, can lead to injection attacks and other vulnerabilities.
+*   **Mojo / IPC:** ([ipc.md](ipc.md), [mojo.md](mojo.md)) - Reinforce importance beyond initial listing.
+*   **Web Platform APIs (Bluetooth, USB, Serial, Codecs, GPU, XR):** ([bluetooth.md](bluetooth.md), [webusb.md](webusb.md), [webserial.md](webserial.md), [webcodecs.md](webcodecs.md), [webgpu.md](webgpu.md), [webxr.md](webxr.md)) - Already have pages or covered elsewhere.
+*   **General Code/Logic & Techniques:** Covered in tips section.
+*   **Specific UI Elements (Interstitials, etc.):** Covered in UI Security Tips / existing pages.
+*   **Specific APIs (Translate, File System, Push Messaging, Downloads):** Covered in API Tips / existing pages ([translation_ui.md](translation_ui.md)?, [file_system_access.md](file_system_access.md), [push_messaging.md](push_messaging.md), [downloads.md](downloads.md)).
+*   **Miscellaneous Side-Channels/Bypasses:** (Canvas, CSS, SVG, WebGL, Copy&Paste, Unicode/IDN, CSRF, SharedWorker, iOS specifics) - These could be integrated into relevant component pages or potentially grouped under a generic "Side Channels" or "Platform Specifics" page if patterns emerge.
 
-*   **Investigate Translate API vulnerabilities:** The Translate API can be abused to bypass security checks and introduce XSS vulnerabilities.
-*   **Investigate File System API vulnerabilities:** The File System API can be abused to bypass security restrictions and access sensitive information.
-*   **Investigate Push Messaging API vulnerabilities:** The Push Messaging API can be abused to leak subscription information or spoof messages.
-*   **Investigate Chrome Enterprise MSI installer vulnerabilities:** The Chrome Enterprise MSI installer can be abused to elevate privileges or execute arbitrary code.
-*   **Investigate Web Share API vulnerabilities:** The Web Share API can be abused to bypass SameSite cookie restrictions or leak sensitive information.
-*   **Investigate chrome.downloads API vulnerabilities:** The chrome.downloads API can be abused to bypass security restrictions and access sensitive information.
-*   **Investigate Portal API vulnerabilities:** The Portal API can be abused to bypass security restrictions or spoof the origin.
-*   **Investigate Mojo IPC mechanism vulnerabilities:** The Mojo IPC mechanism can be abused to bypass security restrictions or leak sensitive information.
-*   **Investigate custom cursor implementation vulnerabilities:** The custom cursor implementation can be abused to overlay and obscure parts of the browser UI, potentially leading to clickjacking or other attacks.
-*   **Investigate SameSite cookie implementation vulnerabilities:** The SameSite cookie implementation can be bypassed in certain scenarios, such as when using the BackgroundFetch API or the Web Share API.
-*   **Investigate Android intent mechanism vulnerabilities:** The Android intent mechanism can be abused to bypass security restrictions or spoof the origin.
-*   **Investigate file type handling vulnerabilities:** The handling of file types, especially those that can execute code or leak sensitive information, can be a source of vulnerabilities.
-*   **Investigate long URL handling vulnerabilities:** The handling of long URLs, especially those with specific characters or schemes, can be a source of vulnerabilities.
-*   **Investigate untrusted input handling in UI elements vulnerabilities:** The handling of untrusted input in UI elements, such as dialog titles and button labels, can lead to injection attacks and other vulnerabilities.
+By focusing on these VRP-informed areas and techniques, and by continuously updating the wiki, we can improve Chromium security research effectiveness.
