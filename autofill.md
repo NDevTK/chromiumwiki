@@ -1,83 +1,63 @@
-# Autofill Security Analysis
+# Component: Autofill Core Logic
 
-**Component Focus:** Chromium autofill, including core logic (`components/autofill/core/browser/`), data handling, and UI (`chrome/browser/ui/autofill/`, `chrome/browser/ui/views/payments/`). Key files include `autofill_popup_controller_impl.cc`/`.h` (popup), `payment_request_sheet_controller.cc` (payment sheet UI), and `form_structure.cc`/`.h` (form parsing). High VRP vulnerability count, particularly around UI interactions and bypasses.
+## 1. Component Focus
+*   **Functionality:** Core browser-side logic for parsing forms, identifying fillable fields, matching stored user data (addresses, credit cards, etc.), and managing autofill suggestions/previews. Excludes the direct UI rendering covered in [autofill_ui.md](autofill_ui.md).
+*   **Key Logic:** Form parsing (`FormStructure`, `AutofillScanner`), field type classification (`AutofillField`), data matching (`AutofillProfileComparator`, `CreditCard`), suggestion generation (`AutofillPopupControllerImpl`), data validation (`AddressDataUtil`, `CreditCard`).
+*   **Core Files:**
+    *   `components/autofill/core/browser/` (esp. `form_structure.cc`, `autofill_field.cc`, `autofill_manager.cc`, `data_model/`)
+    *   `chrome/browser/ui/autofill/autofill_popup_controller_impl.cc` (suggestion logic)
 
-**Related Wiki Pages:** [autofill_ui.md](autofill_ui.md), [payments.md](payments.md), [eye_dropper.md](eye_dropper.md), [pointer_lock.md](pointer_lock.md), [picture_in_picture.md](picture_in_picture.md), [fedcm.md](fedcm.md), [extension_security.md](extension_security.md)
-
-## Potential Security Issues & VRP Patterns:
-
-*   **Bypassing User Interaction Requirements (High VRP Frequency):** A primary goal of autofill security is ensuring intentional user action before filling sensitive data. Attackers frequently attempt to bypass these checks.
-    *   **VRP Pattern (Input Method Abuse):** Various APIs and input methods have been used to trigger autofill without expected user interaction (mouse movement, specific key presses).
-        *   **EyeDropper API:** Used to bypass interaction requirements (VRP: `40065604`, `40063230`, `40058496`; VRP2.txt Line 825). See [eye_dropper.md](eye_dropper.md).
-        *   **Tap Events:** Double-taps or positioning the prompt under the cursor during taps bypassed checks (VRP: `40060134`, `40058217`, `40056900`, `VRP2.txt#1426679`, `VRP2.txt#1487440`, `VRP2.txt#9878`). Android Keyboard Accessory/Bottom Sheet interaction (VRP2.txt Line 13367).
-        *   **Space Key:** Used to position prompt under cursor (VRP: `40056936`).
-        *   **Pointer Lock:** Used to bypass mouse/keyboard input requirements (VRP: `40056870`). See [pointer_lock.md](pointer_lock.md).
+## 2. Potential Logic Flaws & VRP Relevance
+*   **Bypassing User Interaction Requirements (High VRP Frequency):** A primary goal of autofill security is ensuring intentional user action before filling sensitive data. Attackers frequently attempt to bypass these checks by manipulating input events or exploiting timing/state issues. This area is heavily targeted and prone to regressions.
+    *   **VRP Pattern (Input Method Abuse):** Various APIs and input methods used to trigger autofill without expected user interaction (mouse movement, specific key presses).
+        *   *EyeDropper API:* Used to bypass interaction requirements (VRP: `40065604`, `40063230`, `40058496`; VRP2.txt Line 825). See [eye_dropper.md](eye_dropper.md). Interaction logic in `AutofillPopupControllerImpl`.
+        *   *Tap Events:* Double-taps or positioning the prompt under/near the cursor during taps bypassed checks (VRP: `40060134`, `40058217`, `40056900`; VRP2.txt Line 9878, 1426679). Focus on `AutofillPopupViewNativeViews::OnGestureEvent` and its interaction with timing protections. Android Keyboard Accessory/Bottom Sheet interaction (VRP2.txt Line 13367). Tapjacking permission element (VRP2.txt#7863).
+        *   *Space Key:* Used to position prompt under cursor (VRP: `40056936`). Check `AutofillPopupControllerImpl::HandleKeyPressEvent`.
+        *   *Pointer Lock:* Used to bypass mouse/keyboard input requirements (VRP: `40056870`). See [pointer_lock.md](pointer_lock.md).
     *   **VRP Pattern (Timing/State Issues):** Exploiting delays or specific states during the autofill process.
-        *   **Prompt Positioning Delay:** Moving the input field *after* `mousedown` but *before* prompt position calculation allowed rendering the prompt under/near the cursor (VRP: `40058217`, `40056900`, VRP2.txt Line 10877).
-        *   **`NextIdleBarrier`:** While intended to prevent accidental clicks immediately after popup display (`AcceptSuggestion`), its effectiveness under concurrent events needs scrutiny (See Race Conditions below).
-        *   **Keyboard Input Handling (`HandleKeyPressEvent`):** Needs thorough auditing for secure handling of all key events and combinations, especially those used in bypasses (like spacebar, VRP: `40056936`).
-        *   **Specific Research Question:** How can `HandleKeyPressEvent` be hardened against unexpected key combinations or sequences used in interaction bypasses identified in VRPs?
+        *   *Prompt Positioning Delay:* Moving the input field *after* `mousedown` but *before* prompt position calculation allowed rendering the prompt under/near the cursor (VRP: `40058217`, `40056900`, VRP2.txt Line 10877). Analyze popup positioning logic timing relative to input events.
+        *   *Interaction Delays:* Bypasses related to the 500ms delay intended to prevent accidental clicks (`kIgnoreEarlyClicksOnSuggestionsDuration`, `InputEventActivationProtector`). EyeDropper API was used to bypass this (VRP: `40063230`). Keyboard accessory interaction might bypass it (VRP2.txt Line 13367). Check enforcement in `AutofillPopupControllerImpl::AcceptSuggestion`.
+*   **Leaking Autofill Preview Data (Medium VRP Frequency):** Exfiltrating suggested autofill data *before* the user explicitly selects it, often via side channels.
+    *   **VRP Pattern (DOM/CSS Side-Channels):**
+        *   *`scrollWidth` Leak:* Preview text affecting `scrollWidth` even when `.value` is empty (VRP: `916838`). Subsequent fixes attempted to mock `scrollWidth`, but scrollbar presence still leaked info (VRP2.txt#4826).
+        *   *Font Manipulation:* Bypassing font pinning (`system-ui`) by overriding `@font-face` for `system-ui` (VRP2.txt#6190) or using `::first-line` (VRP2.txt#6157) combined with `scrollWidth` measurements. Requires analysis of how preview text styling is applied and isolated.
+        *   *`<select>` `scrollTop` Leak:* Previewed `<select>` option revealing selected index via `scrollTop` changes (VRP: `1250850`). Check `SelectFillFunction`).
+    *   **VRP Pattern (Other Timing/Side-Channels):** Potential for other subtle leaks during preview state (VRP2.txt Line 14122).
+*   **Form Parsing & Field Classification Errors:** Incorrect parsing of forms (`FormStructure`, `AutofillScanner`) or misclassification of field types (`AutofillField::ParseFieldTypesFromAutocompleteAttribute`, heuristics) could lead to incorrect data being suggested, filled, or potentially leaked.
+*   **Data Validation Failures:** Insufficient validation of stored data (addresses, credit cards) or user input before filling could lead to unexpected behavior or injection vulnerabilities if data is rendered insecurely later.
+    *   Address Validation: Robustness of state name mapping (`AlternativeStateNameMap`), zip code regex (`IsValidZip`), address rewriting (`AddressRewriter`).
+*   **Race Conditions/State Management:** Complex state interactions (e.g., during suggestion fetching, display, acceptance, hiding) might have race conditions leading to incorrect behavior or security bypasses. Focus on `AutofillPopupControllerImpl` state machine.
 
-*   **Obscuring Autofill UI (High VRP Frequency):** Attackers attempt to hide the autofill prompt while still allowing interaction, preventing user awareness.
-    *   **VRP Pattern (Overlaying UI Elements):** Other browser UI elements obscure the autofill prompt.
-        *   **Picture-in-Picture (PiP):** Video/Document PiP windows shown over the prompt (VRP: `40058582`). See [picture_in_picture.md](picture_in_picture.md).
-        *   **FedCM:** FedCM bubble dialog shown over the prompt (VRP: `339481295`, `340893685`, `VRP2.txt#7963`). See [fedcm.md](fedcm.md).
-        *   **Extension Windows:** Inactive extension popups (VRP2.txt Line 9002, ref `1290213`) or off-screen windows (VRP2.txt Line 9101) obscure the prompt while allowing keyboard interaction. See [extension_security.md](extension_security.md).
-    *   **VRP Pattern (UI Manipulation/Clipping):** Manipulating the page or browser state to hide the prompt.
-        *   **Input Field Cache/Display:** Tricking visibility checks (VRP: `1395164`, `1358647`, `VRP2.txt#1108181`, `VRP2.txt#6717`, VRP2.txt#3801).
-        *   **Small Windows/Clipping (Android):** Docking/clipping the prompt in narrow views (VRP: `1395164`).
-    *   **Occlusion Checks:** Investigation needed into the robustness of checks designed to prevent filling when obscured (e.g., interaction with PiP occlusion tracking).
-    *   **Specific Research Question:** Are the occlusion checks robust against all methods of overlaying (PiP, FedCM, Extension windows, other dialogs)? How can these checks be improved?
+## 3. Further Analysis and Potential Issues
+*   **Interaction Requirement Robustness:** Are the checks preventing autofill without intentional user interaction (mouse move over item, key press selection) robust against all possible input event sequences, API interactions (EyeDropper, PointerLock), and timing manipulations? How is the `InputEventActivationProtector` applied and can it be bypassed?
+*   **Preview Data Isolation:** How completely is preview text isolated from the web page? Audit all potential side-channels (DOM properties like `scrollWidth`, `offsetHeight`, CSS interactions like font loading, layout timing) that might leak information about preview content dimensions or characters.
+*   **Form Parsing Security:** How resilient is `FormStructure` and field classification logic to malformed HTML or tricky autocomplete attributes designed to confuse the parser?
+*   **Data Validation:** Are all components of stored addresses/cards validated before use? Is validation locale-aware where necessary?
+*   **Concurrency:** Analyze the handling of concurrent autofill events or interactions (e.g., multiple fields showing suggestions, interactions with other UI).
 
-*   **Leaking Autofill Preview Data (Medium VRP Frequency):** Exfiltrating suggested autofill data *before* the user explicitly selects it.
-    *   **VRP Pattern (Timing/Side-Channels):**
-        *   **`scrollWidth` Leak:** Preview text affecting `scrollWidth` even when `.value` is empty (VRP: `916838`).
-        *   **Font Manipulation:** Bypassing font pinning (`system-ui`) by overriding `@font-face` (VRP2.txt Line 6190) or using `::first-line` (VRP2.txt Line 6157) combined with `scrollWidth` measurements.
-        *   **`<select>` `scrollTop` Leak:** Previewed `<select>` option revealing index via `scrollTop` (VRP: `1250850`).
-        *   **Side-Channel via Preview:** General potential for timing or other side-channels (VRP2.txt Line 14122).
-    *   **Specific Research Question:** Can other CSS properties or DOM element properties leak information about preview text dimensions or content?
+## 4. Code Analysis
+*   `AutofillPopupControllerImpl`: Central class managing popup state, suggestions, user interaction. Key methods: `GetSuggestions`, `AcceptSuggestion`, `HandleKeyPressEvent`. Contains logic for interaction delays (`kIgnoreEarlyClicksOnSuggestionsDuration`) and potentially visibility checks.
+*   `AutofillPopupViewNativeViews` (or platform equivalent): Handles UI events like `OnMouseMoved`, `OnGestureEvent`. Interaction with `AutofillPopupControllerImpl` is critical.
+*   `FormStructure`, `AutofillScanner`: Responsible for parsing HTML forms to identify fillable fields.
+*   `AutofillField`: Represents a field, determines its type (`ParseFieldTypesFromAutocompleteAttribute`), and holds heuristics.
+*   `AddressDataUtil`, `CreditCard`, `AutofillProfileComparator`: Core data models and validation logic. `AlternativeStateNameMap`, `AddressRewriter`.
+*   `SelectFillFunction`: Logic for filling `<select>` elements, relevant to `scrollTop` leak (VRP: `1250850`).
 
-*   **Input Validation Failures:** Ensuring data used by autofill (both user input and fetched data) is valid and sanitized.
-    *   **Filter Strings (`FilterSuggestions`):** Uses `base::i18n::ToLower`. Need to verify robustness against injection across locales.
-        *   **Specific Research Question:** Is `base::i18n::ToLower` sufficient sanitization against sophisticated injection attempts in `FilterSuggestions`, considering diverse locales?
-    *   **Address Validation:** Focus on robustness of state name (`AlternativeStateNameMap`), US zip code (`IsValidZip` regex), and address rewriting (`AddressRewriter`) logic. Check for gaps in validation for other fields (street, city, country).
-        *   **Specific Research Question:** How securely are the `AlternativeStateNameMap` protobuf files loaded and updated? Can the `IsValidZip` regex be bypassed? Can `AddressRewriter` normalization introduce vulnerabilities?
-    *   **Autocomplete Attribute:** Ensure `SetFieldTypesFromAutocompleteAttribute` handles potentially malicious `autocomplete` attribute values securely.
+## 5. Areas Requiring Further Investigation
+*   Audit `AutofillPopupControllerImpl::AcceptSuggestion` and related event handlers (`HandleKeyPressEvent`, `OnMouseMoved`, `OnGestureEvent` in Views) for robust enforcement of interaction requirements across all input types (mouse, keyboard, tap, stylus, accessibility tools).
+*   Systematically investigate all DOM/CSS properties that could potentially leak information about preview text (dimensions, content changes) when applied to input/textarea elements in the preview state.
+*   Review `FormStructure` parsing logic for robustness against adversarial HTML.
+*   Test data validation routines (`AddressDataUtil`, `CreditCard` validation) with edge cases and international data.
+*   Fuzzing autofill interaction flows, focusing on timing and concurrent events.
 
-*   **Cross-Site Scripting (XSS):** Ensuring data displayed in autofill UI doesn't introduce script execution.
-    *   **Popup & Payment Sheet Display:** Data displayed in popups (`AcceptSuggestion`) or payment sheets (`payment_request_sheet_controller.cc`) needs sanitization. `suggestion.acceptance_a11y_announcement` seems low risk as it uses localized strings, but other dynamic content display needs review.
-        *   **Specific Research Question:** Review all UI display functions in `payment_request_sheet_controller.cc` for proper sanitization of dynamic data.
+## 6. Related VRP Reports (Selected Patterns)
+*   **Interaction Bypass (EyeDropper):** VRP: `40065604`, `40063230`, `40058496`; VRP2.txt Line 825
+*   **Interaction Bypass (Tap/Click):** VRP: `40060134`, `40058217`, `40056900`; VRP2.txt Line 9878, 10877, 1426679, 1487440
+*   **Interaction Bypass (Pointer Lock):** VRP: `40056870`
+*   **Interaction Bypass (Space Key):** VRP: `40056936`
+*   **Interaction Bypass (Keyboard Accessory):** VRP2.txt#13367
+*   **Preview Leak (scrollWidth/Font):** VRP: `1035058`, `1035063`, `1013882`, `951487`, `916838`; VRP2.txt Line 4826, 6190, 6157
+*   **Preview Leak (Select scrollTop):** VRP: `1250850`, VRP2.txt#7191
+*   **Preview Leak (General):** VRP2.txt#14122, #14026
 
-*   **Race Conditions:** Potential for UI inconsistencies or security bypasses due to timing issues.
-    *   **Popup Visibility (`Show()`/`Hide()`):** Concurrent calls could lead to issues. Mitigations (`AutofillPopupHideHelper`, `NextIdleBarrier`, weak pointers, async deletion) need validation under heavy load/concurrency. The `kIgnoreEarlyClicksOnSuggestionsDuration` aims to prevent accidental acceptance.
-        *   **Specific Research Question:** Can the `NextIdleBarrier` or `kIgnoreEarlyClicksOnSuggestionsDuration` be bypassed under specific timing conditions or event sequences?
-
-*   **Regressions & Bypass Patterns:** Autofill is prone to regressions where fixes for one bypass method are circumvented by slightly different techniques (e.g., multiple EyeDropper bypasses VRP: `40065604`, `40063230`; tap bypasses VRP: `40060134`). Rigorous testing after fixes is crucial.
-
-## Code Analysis
-
-*(Existing code analysis sections for `FilterSuggestions`, `AcceptSuggestion`, `FormStructure` remain relevant but should be viewed through the lens of the VRP patterns above)*
-
-### Key Files:
-
-*   `chrome/browser/ui/autofill/autofill_popup_controller_impl.cc`/`.h`: Popup logic, event handling (`HandleKeyPressEvent`, `AcceptSuggestion`), visibility (`Show`, `Hide`), filtering (`FilterSuggestions`).
-*   `components/autofill/core/browser/form_structure.cc`/`.h`: Form parsing, field type determination, signature calculation.
-*   `components/autofill/core/browser/data_model/`: Address, Credit Card validation logic (`alternative_state_name_map.cc`, `address_rewriter.cc`, validation utils).
-*   `chrome/browser/ui/views/payments/payment_request_sheet_controller.cc`: Payment sheet UI.
-*   `content/public/browser/render_widget_host_view.h`: Interface for view interactions, potentially relevant to visibility/occlusion.
-
-**Vulnerability Note:** High VRP payout history and frequent regressions highlight the critical nature and complexity of Autofill security.
-
-## Related VRP Reports (Selected Patterns)
-
-*   **Input Bypass (EyeDropper):** VRP: `40065604`, `40063230`, `40058496`; VRP2.txt Line 825
-*   **Input Bypass (Tap):** VRP: `40060134`, `40058217`, `40056900`; VRP2.txt Line 9878, 1426679
-*   **Input Bypass (Pointer Lock):** VRP: `40056870`
-*   **UI Obscuring (PiP):** VRP: `40058582`
-*   **UI Obscuring (FedCM):** VRP: `339481295`, `VRP2.txt#7963`
-*   **UI Obscuring (Extension Window):** VRP2.txt Line 9002, 9101
-*   **Preview Leak (scrollWidth/Font):** VRP2.txt Line 4826, 6190
-*   **Preview Leak (Select scrollTop):** VRP: `1250850`
-*   **Input Cache Bypass:** VRP: `1395164`, `1358647`; VRP2.txt Line 1108181, 6717, 3801
-
-*(This list is illustrative, not exhaustive. Refer to `VRP.txt` and `VRP2.txt` for full details)*
+*(See also linked pages like [autofill_ui.md](autofill_ui.md) for UI obscuring issues)*
