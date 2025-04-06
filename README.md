@@ -168,6 +168,7 @@ This list prioritizes components based on a combination of VRP value and frequen
     *   Chromium > Privacy ([privacy.md](privacy.md)) - VRP: $3,000
     *   Chromium > Blink > USB ([webusb.md](webusb.md)) - VRP: $3,000
     *   Chromium > Blink > SecurityFeature > COOP ([coop.md](coop.md)) - VRP: $3,000
+    *   Chromium > Blink > Bluetooth ([bluetooth.md](bluetooth.md)) - VRP: $3,000
     *   Chromium > Blink > Forms > Color ([input.md](input.md)?) - VRP: $2,000 (Related to Input/Autofill)
     *   Chromium > UI > Browser > Navigation ([navigation.md](navigation.md)) - VRP: $2,000
     *   Chromium > Blink > Input ([input.md](input.md)) - VRP: $2,000

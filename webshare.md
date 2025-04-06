@@ -1,58 +1,47 @@
-# Component: Blink > WebShare & Platform Share UI
+# Component: Web Share API
 
 ## 1. Component Focus
-*   Focuses on the implementation of the Web Share API (`navigator.share()`) and its interaction with platform-specific sharing UIs.
-*   Core Blink implementation: `third_party/blink/renderer/modules/webshare/navigator_share.cc`
-*   Platform-specific implementations, e.g., Windows: `chrome/browser/webshare/win/share_operation.cc`. Also involves platform UI views like `chrome/browser/ui/views/sharing/sharing_dialog_view.cc`.
-*   Handles preparing data (text, URLs, files) and invoking the native OS sharing mechanism or Chrome's sharing hub.
+*   **Functionality:** Implements the Web Share API ([Spec](https://w3c.github.io/web-share/)), allowing web pages to invoke the native sharing capabilities of the underlying platform (OS or browser UI) to share data (text, URLs, files) with other applications.
+*   **Key Logic:** Handling `navigator.share()`, validating input data (`ShareData`), interacting with the platform's sharing mechanism (`SharingService`), displaying the share sheet UI. Requires transient user activation.
+*   **Core Files:**
+    *   `components/sharing_hub/`: UI elements like the share sheet.
+    *   `chrome/browser/share/`: Core browser-side logic.
+        *   `share_features.cc`
+        *   `sharing_service.cc`/`.h`: Service coordinating sharing actions.
+        *   `share_attempt.cc`
+    *   Platform-specific implementation (e.g., `chrome/browser/share/android/java/src/org/chromium/chrome/browser/share/`, `chrome/browser/ui/views/sharing_hub/`)
+    *   `third_party/blink/renderer/modules/webshare/navigator_share.cc`: Renderer-side API implementation.
 
 ## 2. Potential Logic Flaws & VRP Relevance
-*   **UI Spoofing/Obscuring:** The share dialog rendering incorrectly or obscuring other sensitive UI elements like the address bar (VRP #40056848 - Windows). Incorrect URL formatting or elision in the dialog (VRP #40061104 - Android).
-*   **SameSite Cookie Policy Bypass:** Potential for requests initiated via sharing mechanisms to bypass SameSite cookie restrictions (VRP2.txt mentions this as a potential area for investigation).
-*   **Information Leaks:** Sensitive information could potentially leak through shared data payloads or the dialog UI itself.
-*   **Incorrect Origin Handling:** Malicious websites might be able to share data appearing to come from another origin.
-*   **Insecure File Handling:** Vulnerabilities in how files are handled, validated, or passed to the OS sharing mechanism (e.g., handling of specific file types, large files, file permissions). Relates to general concerns in `share_operation.cc`.
+*   **Policy Bypass (SameSite):** Using the share mechanism, potentially involving redirects or specific targets (like sharing to Chrome itself), to bypass SameSite cookie restrictions.
+    *   **VRP Pattern (SameSite Bypass):** Sharing a URL via Web Share API, which then opens in Chrome, could cause cross-site requests to incorrectly include SameSite=Lax/Strict cookies (VRP2.txt#11901). See [privacy.md](privacy.md).
+*   **Arbitrary File Access/Download:** Using Web Share with specific data types or targets to access local files or trigger unintended downloads.
+    *   **VRP Pattern (UNC Path Download):** Sharing crafted data containing UNC paths (`\\server\share`) could potentially trigger file downloads or access attempts without proper checks (VRP2.txt#5730). See [downloads.md](downloads.md).
+*   **UI Spoofing:** Misleading the user about the data being shared or the target application in the share sheet UI.
+*   **Information Leaks:** Leaking sensitive data (e.g., shared text/URLs, target app list) through the sharing process.
+*   **User Activation Bypass:** Triggering `navigator.share()` without the required user gesture.
 
 ## 3. Further Analysis and Potential Issues
-*   The Web Share implementation involves interactions between Blink, the browser process, and platform-specific APIs/UIs. Security boundaries between these layers need careful examination.
-*   The handling of different data types (URLs, text, files) and their preparation for the target share service is critical.
-*   Investigate the lifecycle of the share operation and how errors or cancellations are handled.
-*   Analyze the specific checks performed in `share_operation.cc` (Windows) like `IAttachmentExecute::CheckPolicy`.
+*   **Data Validation:** How is the `ShareData` (text, url, files) validated and sanitized before being passed to the platform sharing mechanism? Are file paths or URLs checked for malicious schemes or patterns (like UNC paths - VRP2.txt#5730)?
+*   **Platform Interaction (`SharingService`):** Analyze how the `SharingService` interacts with the native OS sharing APIs on different platforms (Android Intents, Windows Shell, macOS ShareKit). Are there platform-specific vulnerabilities?
+*   **SameSite Cookie Handling:** When a shared URL is opened (potentially back in Chrome), how is the navigation context handled regarding SameSite cookies? Does it correctly treat the navigation as cross-site? (VRP2.txt#11901).
+*   **Share Sheet UI Security:** Can the share sheet UI be spoofed or manipulated? Is the displayed preview accurate?
+*   **User Activation:** Verify strict enforcement of transient user activation for `navigator.share()`.
 
 ## 4. Code Analysis
-*   Examine `NavigatorShare::share` in `navigator_share.cc` for permission checks and data processing.
-*   Review platform-specific code like `ShareOperation::Run` (Windows) for secure handling of file paths, source URLs, and interaction with COM interfaces (`IAttachmentExecute`).
-*   Analyze UI code (`SharingDialogView`, etc.) for correct origin display and resistance to spoofing/obscuring.
-
-```cpp
-// Example: Potential area in share_operation.cc (Windows)
-// Ensure SetSource, SetFileName, CheckPolicy are robust against manipulation.
-// ...
-if (FAILED(attachment_services->SetSource(source.c_str()))) {
-  Complete(blink::mojom::ShareError::INTERNAL_ERROR);
-  return;
-}
-if (FAILED(attachment_services->SetFileName(
-        file->name.path().value().c_str()))) {
-  Complete(blink::mojom::ShareError::INTERNAL_ERROR);
-  return;
-}
-if (FAILED(attachment_services->CheckPolicy())) {
-  Complete(blink::mojom::ShareError::PERMISSION_DENIED);
-  return;
-}
-// ...
-```
+*   `NavigatorShare::share`: Renderer-side entry point. Checks user activation (`LocalFrame::HasTransientUserActivation`). Packages `ShareData`.
+*   `SharingServiceImpl`: Browser-side service handling the share request. Calls platform-specific implementation.
+*   Platform Share implementations (e.g., `ShareServiceImpl::ShareViaIntent` on Android): Handles constructing and launching native share intents/dialogs. Check data sanitization and intent construction.
+*   `SharingHubBubbleController` / `SharingHubBubbleViewImpl`: Desktop share sheet UI.
 
 ## 5. Areas Requiring Further Investigation
-*   **SameSite Cookie Interaction:** Thoroughly investigate if and how `navigator.share()` can be used to bypass SameSite cookie restrictions.
-*   **Platform UI Consistency:** Verify secure dialog rendering (no overlapping UI, correct origin display) across all supported platforms (Windows, macOS, Android, ChromeOS).
-*   **File Handling Security:** Deep dive into file path validation, temporary file creation/deletion, and interaction with APIs like `IAttachmentExecute` (Windows).
-*   **Sandboxed Contexts:** How does `navigator.share()` behave when called from sandboxed iframes?
+*   **UNC Path Handling:** Confirm that sharing data containing UNC paths does not lead to unintended network access or downloads across all platforms (VRP2.txt#5730).
+*   **SameSite Cookie Bypass:** Test various scenarios involving sharing URLs and selecting Chrome (or other browsers) as the target to see if SameSite cookies are incorrectly sent (VRP2.txt#11901).
+*   **File Sharing Security:** Analyze the security model for sharing `File` objects. How are permissions handled?
+*   **Error Handling:** Review error handling when sharing fails or is cancelled.
 
 ## 6. Related VRP Reports
-*   VRP #40061104 (P1, $1000): Security: Web Share dialog URL is incorrectly elided in Android (ineffective fix for issue 1329541)
-*   VRP #40056848 (P2, $1000): Security: Share dialog on Windows can render over address bar, window controls
-*   VRP2.txt#170, #185, #190: Mentions that Web Share API can potentially be abused to bypass SameSite cookie restrictions or leak sensitive information. *(Needs verification/investigation)*
+*   VRP2.txt#11901 (SameSite bypass via sharing URL)
+*   VRP2.txt#5730 (Sharing UNC path triggers SMB connection/download)
 
-*(This list should be reviewed against VRP.txt/VRP2.txt for any other relevant reports).*
+*(See also [privacy.md](privacy.md), [downloads.md](downloads.md), [intents.md](intents.md))*
