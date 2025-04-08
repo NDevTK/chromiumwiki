@@ -1,47 +1,54 @@
 # Inter-Process Communication (IPC) in Chromium: Security Considerations
 
-This page documents potential security vulnerabilities related to inter-process communication (IPC) in Chromium, focusing on the `BrowserChildProcessHostImpl` class in `content/browser/browser_child_process_host_impl.cc`.  IPC is crucial for communication between different browser processes, and vulnerabilities here could allow attackers to bypass process boundaries, inject malicious code, or cause denial-of-service conditions.
+This page documents potential security vulnerabilities related to inter-process communication (IPC) in Chromium, focusing on legacy IPC (`ipc/`) and Mojo (`mojo/`). IPC is crucial for communication between different browser processes (browser, renderer, GPU, utility, etc.), and vulnerabilities here could allow attackers to bypass process boundaries (sandbox escape), inject malicious code, gain unauthorized capabilities, or cause denial-of-service conditions.
 
-## Potential Vulnerabilities:
+## Potential Vulnerabilities (General IPC/Mojo):
 
-* **Buffer Overflows:** Insufficient input validation could lead to buffer overflows.  The `OnMessageReceived` function needs to be reviewed for proper input validation and buffer size checks.
-* **Race Conditions:** Concurrent access could lead to race conditions.  The asynchronous nature of IPC and the interaction with multiple processes require careful synchronization to prevent race conditions.
-* **Message Tampering:** Mechanisms should be in place to detect and prevent message tampering.  The integrity of IPC messages needs to be ensured.
-* **Injection Attacks:** Insufficient input validation could allow injection attacks.  The handling of messages and their contents needs to be reviewed for proper sanitization and validation.
-* **Authorization Bypass:** Insufficient authorization checks could allow unauthorized access.  The `OnMessageReceived` function and other IPC-related functions should be reviewed for proper authorization checks.
-* **Process Launching and Sandboxing:**  Incorrect sandboxing of child processes could allow a compromised process to affect the browser or system.  The `Launch` and `LaunchWithFileData` functions in `browser_child_process_host_impl.cc` handle process launching and sandboxing and need careful review.
-* **Mojo Message Handling:**  Vulnerabilities in Mojo message handling could allow malicious code execution or denial-of-service attacks.  The `OnMojoError` function and its interaction with the termination process need to be analyzed.
-* **Metrics and Resource Management:**  Improper handling of metrics or resource management during process termination could lead to information leakage or denial-of-service vulnerabilities.  The `CreateMetricsAllocator`, `ShareMetricsAllocatorToProcess`, `ForceShutdown`, and `OnChildDisconnected` functions need review.
+*   **Insufficient Validation/Access Control:** Browser-process handlers failing to validate data or check permissions for messages received from less privileged processes (renderers, utility processes).
+    *   **VRP Pattern (Missing Origin/Permission Checks):** Allowing actions on behalf of incorrect origins (e.g., Push Messaging VRP: `1275626`; Content Index VRP: `1263530`, `1263528`). Extensions accessing APIs without proper checks (VRP2.txt#11815).
+    *   **VRP Pattern (Capability Bypass via Unvalidated Metadata):** Allowing less privileged processes to trigger privileged actions by sending valid *data* but potentially unvalidated *metadata*. For example, the `StartDragging` IPC handler (`RenderWidgetHostImpl::StartDragging`) filters dragged file paths based on renderer permissions but might not sufficiently validate associated metadata like the starting screen location or allowed operations mask before passing them to platform APIs (`WebContentsView*::StartDragging` -> `aura::client::DragDropClient::StartDragAndDrop`). This could allow a compromised renderer to gain unintended control over the mouse cursor or trigger drag operations beyond its permissions (VRP2.txt#4). See [drag_and_drop.md](drag_and_drop.md).
+    *   **VRP Pattern (Incorrect Destination Handling):** Browser process mishandling messages intended for a different process (e.g., Browser handling renderer `ACCEPT_BROKER_CLIENT` message VRP2.txt#370).
+*   **Memory Safety (UAF, Buffer Overflows, Integer Overflows, Type Confusion):** Classic memory safety bugs within the IPC message handling code itself, or in the code processing the received data, especially when parsing complex data structures or handling large messages. Type confusion in Mojo interfaces (VRP: `1337607`).
+*   **Race Conditions & State Confusion:** Asynchronous nature of IPC leading to race conditions, dangling pointers (e.g., `PermissionRequestManager` UAF VRP: `1424437`), or inconsistent state management across processes. Use-after-free triggered via IPC through side panel feature (VRP: `40061678`). Double fetch via code cache IPC (VRP2.txt#542).
+*   **Injection Attacks:** Insufficient sanitization or validation of data received via IPC leading to injection vulnerabilities (though less common than direct memory corruption).
+*   **Process Launching and Sandboxing:** Incorrect sandboxing of child processes launched via IPC (e.g., `Launch` in `BrowserChildProcessHostImpl`) could allow a compromised child process broader system access. Exploiting COM interfaces on Windows for process launching (`GoogleUpdate.ProcessLauncher` + Session Moniker VRP: `340090047`, VRP2.txt#3763).
+*   **Mojo Specific Issues:** Vulnerabilities related to Mojo features like shared buffers, handles, or interface brokering. Insecure handling of special Mojo types like `native_struct.mojom`. Unsafe deserialization.
+*   **Information Leaks:** IPC mechanisms inadvertently leaking sensitive data between processes.
 
-### Security Considerations
+### Legacy IPC (`ipc/`) Specific Considerations:
+*   Primarily used for browser↔renderer communication before widespread Mojo adoption.
+*   Uses macros (`IPC_MESSAGE_HANDLER`, `IPC_MESSAGE_FORWARD`) for message routing. Review these handlers for validation issues.
+*   Serialization uses `ParamTraits`; review `Write` and `Read` methods for memory safety bugs.
 
--   A vulnerability existed where the Browser Process wrongly handled the ACCEPT_BROKER_CLIENT message. This could be triggered by a compromised renderer process and lead to a browser crash. This issue has been fixed. (VRP2.txt)
-    -   Fixed by applying the patch described in VRP2.txt.
+### Mojo (`mojo/`) Specific Considerations:
+*   Modern IPC framework based on defined interfaces (`.mojom` files).
+*   Interfaces can be defined between various process types (browser, renderer, GPU, utility, services).
+*   Focus on validation within the browser-process implementation of interfaces exposed to less privileged processes. Check for `ReportBadMessage` calls, which often indicate security checks.
+*   Analyze interactions with interface brokers (`BrowserInterfaceBroker`, `RenderFrameHost::GetAssociatedInterface`, etc.) for potential security issues.
 
 ## Further Analysis and Potential Issues:
 
-* **Input Validation:** All IPC messages should be validated.  The validation should include checks for message types, sizes, and content to prevent buffer overflows and injection attacks.
-* **Synchronization:** Implement synchronization to prevent race conditions.  Use appropriate synchronization primitives (e.g., locks, mutexes) to protect shared resources and prevent race conditions during concurrent access.
-* **Data Integrity:** Implement mechanisms to detect and prevent message tampering.  Consider using message signing or encryption to ensure data integrity.
-* **Authorization:** Implement robust authorization checks.  Verify that only authorized processes can access sensitive data or functionalities.
-* **Error Handling:** Implement robust error handling.  Error messages should not reveal sensitive information.  The error handling in IPC-related functions should be reviewed to prevent crashes, unexpected behavior, and information leakage.
-* **Child Process Management:**  The lifecycle management of child processes, including their launching, connection, termination, and resource cleanup, needs further analysis to prevent vulnerabilities.  The interaction with the `ChildProcessHost` and the `SandboxedProcessLauncherDelegate` is crucial for security.
+* **Input Validation:** All IPC/Mojo messages received in a more privileged process from a less privileged one (especially browser process from renderer) *must* be rigorously validated. Assume the sender is malicious. Validate origins, permissions, *metadata* (e.g., flags, geometry, operations masks), and *data* (e.g., URLs, file paths, serialized objects) based on context and permissions.
+* **Synchronization:** Explicitly handle potential race conditions using appropriate synchronization primitives when IPC handlers access shared state.
+* **Authorization:** Verify caller identity and permissions before performing sensitive actions triggered via IPC. Use mechanisms like `RenderFrameHost::GetLastCommittedOrigin` and associated security policy checks (`ChildProcessSecurityPolicy`).
+* **Error Handling:** Implement robust error handling for IPC failures (`OnMojoError`, etc.) without revealing sensitive information. Disconnect or terminate misbehaving processes (`ReportBadMessage`).
+* **Child Process Management:** Ensure secure lifecycle management (launching, connection, termination, resource cleanup) for all child process types.
 
 ## Areas Requiring Further Investigation:
 
-* Review all IPC message handlers.
-* Implement synchronization mechanisms.
-* Implement message tampering detection and prevention.
-* Implement robust authorization checks.
-* Implement robust error handling.
-* **IPC Channel Security:**  The security of the IPC channel itself, including the transport mechanism and message handling, needs to be thoroughly analyzed to prevent eavesdropping, tampering, or injection attacks.
-* **Message Filtering and Validation:**  The mechanisms for filtering and validating IPC messages should be reviewed for potential bypasses or weaknesses.
-
+* Review all Mojo interface implementations in privileged processes (browser, network, GPU) that are exposed to less privileged processes (renderer, utility). Pay special attention to interfaces handling input, file access, permissions, device access, navigation, and rendering commands, checking validation of *all* parameters.
+* Audit legacy IPC handlers (`OnMessageReceived` in `RenderProcessHostImpl`, `RenderFrameHostImpl`, etc.) for similar validation issues.
+* Analyze the security of Interface Brokers and how interfaces are obtained across process boundaries.
+* Review `ParamTraits` implementations for legacy IPC for memory safety.
+* Fuzz Mojo interfaces exposed to renderers.
 
 ## Files Reviewed:
+* `content/browser/browser_child_process_host_impl.cc` (Previously focused, but IPC is broader)
+* `content/browser/renderer_host/render_widget_host_impl.cc` (Handles `StartDragging` IPC)
 
-* `content/browser/browser_child_process_host_impl.cc`
-
-## Key Functions Reviewed:
-
-* `OnMessageReceived`, `OnBadMessageReceived`, `OnChildDisconnected`, `Launch`, `LaunchWithFileData`, `ForceShutdown`, `OnChannelConnected`, `OnChannelError`, `CreateMetricsAllocator`, `ShareMetricsAllocatorToProcess`, `RegisterCoordinatorClient`, `OnMojoError`
+## Key Functions/Concepts Reviewed:
+* `OnMessageReceived`, `ReportBadMessage`, `OnMojoError`
+* Mojo Interface Definitions (`.mojom`) and Implementations
+* `RenderWidgetHostImpl::StartDragging` (Example IPC handler with potential metadata validation issues)
+* Interface Brokers (`BrowserInterfaceBroker`)
+* `ChildProcessSecurityPolicy`

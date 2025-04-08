@@ -12,7 +12,7 @@
 
 ## 2. Potential Logic Flaws & VRP Relevance
 *   **Interaction Requirement Bypass:** Using the Pointer Lock API state or transitions to bypass security checks in other components requiring user interaction.
-    *   **VRP Pattern (Autofill Bypass):** Pointer Lock was used (likely involving requesting and potentially exiting the lock) to bypass Autofill interaction requirements, enabling autofill without expected user gestures (VRP: `40056870`). See [autofill.md](autofill.md), [autofill_ui.md](autofill_ui.md).
+    *   **VRP Pattern (Autofill Bypass):** Pointer Lock was used (likely involving requesting and potentially exiting the lock) to bypass Autofill interaction requirements, enabling autofill without expected user gestures (VRP: `40056870`). See [autofill.md](autofill.md).
 *   **Fullscreen Bypass/Spoofing:** Abusing Pointer Lock in conjunction with fullscreen mode to hide security indicators or trap the user.
 *   **Input Spoofing:** Potential for flaws in how `movementX`/`movementY` are calculated or reported.
 *   **Escape Mechanism Failure:** Preventing the user from exiting Pointer Lock mode (e.g., by blocking Esc key).
@@ -38,4 +38,4 @@
 ## 6. Related VRP Reports
 *   VRP: `40056870` (Autofill bypass using Pointer Lock)
 
-*(See also [autofill.md](autofill.md), [autofill_ui.md](autofill_ui.md), [input.md](input.md), [fullscreen.md](fullscreen.md)?)*
+*(See also [autofill.md](autofill.md), [input.md](input.md), [fullscreen.md](fullscreen.md)?)*

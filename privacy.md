@@ -18,7 +18,7 @@
 *   How effectively is data isolated between normal and Incognito profiles?
 *   How robust is SameSite cookie enforcement against various redirect types, service worker interactions, and API calls?
 *   Are there side-channels in Storage APIs (LocalStorage, IndexedDB, Cache API, Shared Storage) that could leak information cross-origin despite partitioning?
-*   Can privacy-enhancing features like FedCM or WebID be abused to leak user information or enable tracking? (See also `fedcm.md`, `webid.md`).
+*   Can privacy-enhancing features like FedCM or WebID be abused to leak user information or enable tracking? (See also `fedcm.md`).
 *   Analysis of specific APIs documented under privacy review (e.g., those listed at [https://chromium.googlesource.com/chromium/src/+/main/docs/privacy/reviewed_apis.md](https://chromium.googlesource.com/chromium/src/+/main/docs/privacy/reviewed_apis.md)).
 
 ## 4. Code Analysis

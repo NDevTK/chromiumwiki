@@ -11,7 +11,7 @@
 
 ## 2. Potential Logic Flaws & VRP Relevance
 *   **UI Obscuring (High VRP Frequency):** PiP windows, being always-on-top and sometimes interactable (`ShowInactive`), can obscure other sensitive browser UI elements, enabling attacks if input protections on the obscured UI are insufficient.
-    *   **VRP Pattern (Obscuring Prompts):** Video/Document PiP windows obscuring Permission prompts (PEPC) (VRP: `342194497`, VRP2.txt#6928), Autofill prompts (VRP: `40058582`, VRP2.txt#5228), FedCM prompts (VRP: `339654392`, VRP2.txt#12993). These often lead to granting permissions or revealing autofill data without user awareness due to keyboard interaction with the hidden prompt. See [permissions.md](permissions.md), [autofill_ui.md](autofill_ui.md), [fedcm.md](fedcm.md).
+    *   **VRP Pattern (Obscuring Prompts):** Video/Document PiP windows obscuring Permission prompts (PEPC) (VRP: `342194497`, VRP2.txt#6928), Autofill prompts (VRP: `40058582`, VRP2.txt#5228), FedCM prompts (VRP: `339654392`, VRP2.txt#12993). These often lead to granting permissions or revealing autofill data without user awareness due to keyboard interaction with the hidden prompt. See [permissions.md](permissions.md), [autofill.md](autofill.md), [fedcm.md](fedcm.md).
 *   **Origin Spoofing (Document PiP):** Flaws in how the origin is determined and displayed for Document PiP windows, especially when initiated from subframes or after navigations/crashes.
     *   **VRP Pattern (Incorrect Origin Display):** Document PiP address bar showing the top-level opener's origin instead of the PiP content's origin, particularly when opened from iframes (VRP: `40063068`, `1429246`, `1450728`; VRP2.txt#10137). Interaction with FencedFrames (VRP: `40062954`, VRP2.txt#7262). Spoofing via `opener` (VRP: `40062959`, VRP2.txt#304). Spoofing via long `about:blank#...` URLs (VRP2.txt#4130). Spoofing after opener navigation/crash (VRP2.txt#10177).
 *   **Input/Interaction Issues:** Compromised renderers manipulating PiP window state.
@@ -59,4 +59,4 @@
 *   **Interaction/Manipulation:**
     *   VRP: `40063071` / VRP2.txt#310 (Resize/Move by compromised renderer)
 
-*(See also [autofill_ui.md](autofill_ui.md), [permissions.md](permissions.md), [fedcm.md](fedcm.md), [fenced_frames.md](fenced_frames.md))*
+*(See also [autofill.md](autofill.md), [permissions.md](permissions.md), [fedcm.md](fedcm.md), [fenced_frames.md](fenced_frames.md))*

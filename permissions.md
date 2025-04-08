@@ -61,4 +61,4 @@
 *   **PEPC Issues:** VRP: `341663594` (Positioning); VRP2.txt#7863 (Tapjacking/Overlay)
 *   **Extension Interaction:** VRP: `1306167` (Info leak potentially enabling permission abuse), VRP2.txt#12352 (Extension obscuring prompt)
 
-*(Note: This component is tightly coupled with UI elements ([autofill_ui.md](autofill_ui.md), [input.md](input.md)) and specific features like Geolocation, Media Capture etc.)*
+*(Note: This component is tightly coupled with UI elements ([autofill.md](autofill.md), [input.md](input.md)) and specific features like Geolocation, Media Capture etc.)*

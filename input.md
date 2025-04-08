@@ -33,7 +33,7 @@
 *   `EventHandler::UpdateCursor` and custom cursor logic (size limits, fallback checks).
 *   `PointerLockController`, `MouseLockDispatcher` (See [pointer_lock.md](pointer_lock.md)).
 *   `EyeDropper` module implementation (See [eye_dropper.md](eye_dropper.md)).
-*   Autofill popup interaction logic (`AutofillPopupViewNativeViews` methods like `HandleKeyPressEvent`, `OnMouseMoved`, `OnGestureEvent`). See [autofill_ui.md](autofill_ui.md).
+*   Autofill popup interaction logic (`AutofillPopupViewNativeViews` methods like `HandleKeyPressEvent`, `OnMouseMoved`, `OnGestureEvent`). See [autofill.md](autofill.md).
 *   Permission prompt event handling (`PermissionPromptBubbleView`, `PermissionRequestManager`). See [permissions.md](permissions.md).
 
 ## 5. Areas Requiring Further Investigation

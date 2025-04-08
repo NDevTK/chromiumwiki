@@ -13,7 +13,7 @@
 
 ## 2. Potential Logic Flaws & VRP Relevance
 *   **Interaction Requirement Bypass (Autofill):** Using the EyeDropper API, specifically the act of opening and potentially immediately closing the chooser, to bypass security checks in other components that require specific user interaction (like mouse movement or keyboard input) before performing sensitive actions.
-    *   **VRP Pattern (Autofill Bypass):** Calling `EyeDropper.open()` (even if immediately cancelled or aborted) was repeatedly used to bypass interaction checks for triggering Autofill suggestions/acceptance without the expected mouse movement or key presses. This affected both standard and refactored Autofill logic. (VRP: `40065604`, `40063230`, `40058496`; VRP2.txt#825). See [autofill.md](autofill.md), [autofill_ui.md](autofill_ui.md).
+    *   **VRP Pattern (Autofill Bypass):** Calling `EyeDropper.open()` (even if immediately cancelled or aborted) was repeatedly used to bypass interaction checks for triggering Autofill suggestions/acceptance without the expected mouse movement or key presses. This affected both standard and refactored Autofill logic. (VRP: `40065604`, `40063230`, `40058496`; VRP2.txt#825). See [autofill.md](autofill.md).
 *   **Cursor Position Confusion / UI Spoofing:** Misleading the user about the actual cursor position or what will be sampled due to the magnifier UI.
     *   **VRP Pattern (Cursor Confusion):** The magnifier could potentially confuse the user about the exact pixel being sampled, leading to unintended clicks if combined with UI redressing (VRP: `1466230`; VRP2.txt#12404). Could potentially overlay parts of sensitive UI.
 *   **Screen Capture Security:** Ensuring the screen capture mechanism (`webrtc::DesktopCapturer`) doesn't leak unintended data or have vulnerabilities itself.
@@ -43,4 +43,4 @@
 *   **Autofill Bypass:** VRP: `40065604`, `40063230`, `40058496`; VRP2.txt#825
 *   **Cursor Confusion:** VRP: `1466230`; VRP2.txt#12404
 
-*(See also [autofill.md](autofill.md), [autofill_ui.md](autofill_ui.md), [input.md](input.md))*
+*(See also [autofill.md](autofill.md), [input.md](input.md))*

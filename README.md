@@ -40,13 +40,13 @@ This section provides actionable tips for security research in Chromium, informe
         *   *FedCM:* FedCM bubbles obscuring Autofill (VRP: `339481295`, `340893685`, VRP2.txt#7963).
         *   *Extensions:* Extension popups obscuring permissions/screen share (VRP: `40058873`, VRP2.txt#7974), payment requests (VRP2.txt#7574). Inactive extension windows obscuring active prompts/pages (VRP: `40058935`, VRP2.txt#9002, #13551, #12352).
         *   *System UI:* Share dialogs over browser UI (VRP: `40056848`). System notifications obscuring fullscreen toast (Pop-up blocker VRP2.txt#11735, Download VRP2.txt#10006, #10086, External apps VRP2.txt#12584). Android keyboard/text selection menu obscuring fullscreen toast (VRP2.txt#1873, #13813). `<select>` dropdown obscuring fullscreen toast (VRP2.txt#10560).
-        *   See [fedcm.md](fedcm.md), [picture_in_picture.md](picture_in_picture.md), [permissions.md](permissions.md), [autofill_ui.md](autofill_ui.md), [extensions_api.md](extensions_api.md).
+        *   See [fedcm.md](fedcm.md), [picture_in_picture.md](picture_in_picture.md), [permissions.md](permissions.md), [autofill.md](autofill.md), [extensions_api.md](extensions_api.md).
     *   **Dialog/Prompt Spoofing:** Investigate UI origin/content confusion.
         *   *Install Prompts:* PWA install prompts (origin display, overlaying other origins - VRP2.txt#6886, #13834, #7452 - Android).
-        *   *External Protocols:* Dialogs showing wrong origin due to redirects or timing (VRP: `40055515`; VRP2.txt#9087, #13592, #11016, #13605). Dialogs overlapping other origins (VRP2.txt#13555).
+        *   *External Protocols:* Dialogs showing wrong origin due to redirects or timing (VRP: `40055515`; VRP2.txt#9087, #13592, #11016, #13605). Dialogs overlapping other origins (VRP2.txt#13555). See [protocol_handler.md](protocol_handler.md).
         *   *Chooser Dialogs:* Bluetooth/USB/Serial/HID showing incorrect/missing origin (opaque origin VRP: `40061374`, `40061373`, VRP2.txt#8904; permission delegation VRP2.txt#10263; Android file picker VRP2.txt#4283).
         *   *Rendering Location:* Prompts rendering outside initiator windows (PEPC - VRP: `341663594`, VRP2.txt#12915; FedCM - VRP: `338233148`, VRP2.txt#13024).
-        *   *PDF:* Incorrect X-Frame-Options handling allowing framing (VRP2.txt#11116).
+        *   *PDF:* Incorrect X-Frame-Options handling allowing framing (VRP2.txt#11116). See [plugin_security.md](plugin_security.md).
         *   See [web_app_identity.md](web_app_identity.md), [navigation.md](navigation.md), [webserial.md](webserial.md), [webusb.md](webusb.md), [bluetooth.md](bluetooth.md), [permissions.md](permissions.md), [fedcm.md](fedcm.md).
     *   **Input/Interaction Hijacking:** Investigate techniques bypassing user intent for interaction.
         *   *Custom Cursors:* Overlaying UI, confusing position (VRP: `40057147`, `1381087`, `1376859`; VRP2.txt#11789, #15458, #13861). Interacting with Permissions prompt (VRP2.txt#11789). See [input.md](input.md).
@@ -79,7 +79,7 @@ This section provides actionable tips for security research in Chromium, informe
 
 **3. Autofill & Input Handling Bypasses (High Likelihood, Medium-High VRP Value):**
 
-*   **Focus:** Investigate bypasses for autofill security measures (interaction requirements, visibility checks). Analyze input methods, timing attacks, and interactions with other browser features (PiP, FedCM). Look for regressions. See [autofill.md](autofill.md), [autofill_ui.md](autofill_ui.md), [input.md](input.md).
+*   **Focus:** Investigate bypasses for autofill security measures (interaction requirements, visibility checks). Analyze input methods, timing attacks, and interactions with other browser features (PiP, FedCM). Look for regressions. See [autofill.md](autofill.md), [input.md](input.md).
 *   **Techniques & VRP Patterns:**
     *   **Input Method Abuse:** Bypasses using EyeDropper API (VRP: `40065604`, `40063230`, `40058496`, `VRP2.txt#825`), taps (double-taps, rendering near/under cursor - VRP: `40060134`, `40058217`, `40056900`, VRP2.txt#1426679, #1487440, #9878), space key input (VRP: `40056936`), pointer lock (VRP: `40056870`), or physical keyboard accessory (VRP: `VRP2.txt#13367`). Custom CSS cursors (VRP2.txt#13795). See [eye_dropper.md](eye_dropper.md), [pointer_lock.md](pointer_lock.md).
     *   **Visibility Bypass:** Obscuring autofill prompt with PiP windows (VRP: `40058582`, VRP2.txt#5228), FedCM dialogs (VRP: `339481295`, `340893685`, VRP2.txt#7963). Tricking visibility checks by manipulating input field cache/display or using small/clipped windows (VRP: `1395164`, `1358647`, VRP2.txt#1108181, #6717, #3801). See [picture_in_picture.md](picture_in_picture.md), [fedcm.md](fedcm.md).
@@ -90,7 +90,7 @@ This section provides actionable tips for security research in Chromium, informe
 
 *   **Focus:** Deeply analyze IPC messages and Mojo interfaces, especially those callable from less privileged contexts (renderer, GPU process, extensions). Look for insufficient validation (type confusion, integer overflows, missing origin/permission checks), access control flaws, memory safety issues (UAF, buffer overflows), and incorrect state handling (race conditions, dangling pointers). See [ipc.md](ipc.md), [mojo.md](mojo.md).
 *   **Techniques & VRP Patterns:**
-    *   **Insufficient Validation/Access Control:** Lack of checks on parameters or caller privileges allowed privileged actions (e.g., `StartDragging` from renderer allowing arbitrary mouse control - VRP2.txt#4). Wrong process handling message (Browser handling renderer-intended `ACCEPT_BROKER_CLIENT` - VRP2.txt#370). Lack of origin checks (e.g., `PushMessaging` API - VRP: `1275626`; `ContentIndex` - VRP: `1263530`, `1263528`; `GetDeveloperIdsTask` VRP2.txt#14587). Incorrect permission checks allowing extensions to send messages to other tabs (VRP2.txt#11815). Insecure handling of `native_struct.mojom`. Unsafe deserialization.
+    *   **Insufficient Validation/Access Control:** Lack of checks on parameters or caller privileges allowed privileged actions (e.g., `StartDragging` from renderer allowing arbitrary mouse control - VRP2.txt#4). Wrong process handling message (Browser handling renderer-intended `ACCEPT_BROKER_CLIENT` - VRP2.txt#370). Lack of origin checks (e.g., `PushMessaging` API - VRP: `1275626`; `ContentIndex` API - VRP: `1263530`, `1263528`; `GetDeveloperIdsTask` VRP2.txt#14587). Incorrect permission checks allowing extensions to send messages to other tabs (VRP2.txt#11815). Insecure handling of `native_struct.mojom`. Unsafe deserialization.
     *   **Privilege Escalation/Sandbox Escapes:** Compromised renderer sending crafted messages to browser process to gain higher privileges or escape sandbox. Exploiting interfaces related to file system access, user input simulation, privileged UI, permissions, DevTools. Exploiting COM interfaces on Windows (`GoogleUpdate.ProcessLauncher` + Session Moniker VRP: `340090047`, VRP2.txt#3763).
     *   **State Confusion/Memory Safety:** Exploiting race conditions or dangling pointers in IPC state management (e.g., `PermissionRequestManager` UAF - VRP: `1424437`). Use-after-free in `observer_list.h` via side panel feature (VRP: `40061678`). Type confusion (VRP: `1337607`). Double fetch leading to state mismatch (VRP2.txt#542 - Code Cache).
 
@@ -98,7 +98,7 @@ This section provides actionable tips for security research in Chromium, informe
 
 *   **Focus:** Investigate newer or complex web platform features (WebTransport, WebCodecs, WebGPU, WebXR, FedCM, Portals, FencedFrames, File System Access, etc.) and older complex features (Service Workers, CORS, CSP, Sandboxing). Pay attention to their security models, interactions, potential for origin confusion, policy bypass, and side-channel leaks.
 *   **Techniques & VRP Patterns:**
-    *   **Origin Spoofing/Confusion:** Dialog origin issues (Bluetooth/USB/Serial/HID chooser VRP: `40061374`, `40061373`, VRP2.txt#8904). FedCM prompts with opaque origins (VRP: `340893685`, VRP2.txt#13066). Document PiP origin issues (VRP: `40063068`, `40062959`, `1429246`, `1450728`, VRP2.txt#13133, #14228, #10137, #4398). FencedFrames interaction with PiP (VRP: `40062954`, VRP2.txt#7262). Portal API URL spoof after crash (VRP: `40064170`). External protocol dialogs via redirects (VRP: `40055515`). `javascript:`/`data:` URL origin confusion (VRP: `40059251`, VRP2.txt#173). `blob:` URL origin issues (VRP: `1069246`, `705778`, VRP2.txt#11681, #1761). Navigation not painting content (VRP2.txt#7679). See [webid.md](webid.md), [fedcm.md](fedcm.md), [picture_in_picture.md](picture_in_picture.md), [fenced_frames.md](fenced_frames.md), [portals.md](portals.md).
+    *   **Origin Spoofing/Confusion:** Dialog origin issues (Bluetooth/USB/Serial/HID chooser VRP: `40061374`, `40061373`, VRP2.txt#8904). FedCM prompts with opaque origins (VRP: `340893685`, VRP2.txt#13066). Document PiP origin issues (VRP: `40063068`, `40062959`, `1429246`, `1450728`, VRP2.txt#13133, #14228, #10137, #4398). FencedFrames interaction with PiP (VRP: `40062954`, VRP2.txt#7262). Portal API URL spoof after crash (VRP: `40064170`). External protocol dialogs via redirects (VRP: `40055515`). `javascript:`/`data:` URL origin confusion (VRP: `40059251`, VRP2.txt#173). `blob:` URL origin issues (VRP: `1069246`, `705778`, VRP2.txt#11681, #1761). Navigation not painting content (VRP2.txt#7679). See [fedcm.md](fedcm.md), [picture_in_picture.md](picture_in_picture.md), [fenced_frames.md](fenced_frames.md), [portals.md](portals.md).
     *   **Policy Bypass (CSP, SameSite, Sandbox, Mixed Content, CORS):**
         *   *SameSite:* Bypasses via Web Share API (VRP2.txt#11901), BackgroundFetch (VRP: `1244289`, VRP2.txt#10929), redirects (VRP: `698492`, VRP2.txt#9752), Service Worker FetchEvent (VRP: `1115438`, VRP2.txt#7521), Android Intents (VRP: `1375132`, VRP2.txt#10199), Prerender (VRP2.txt#14702, #16021, VRP2.txt#14976). See [privacy.md](privacy.md).
         *   *CSP:* Bypasses via Service Worker intercept (VRP: `598077`), `about:blank` nav (VRP: `996741`, VRP2.txt#1924), `blob:` nav (VRP: `1115628`, VRP2.txt#7831, #11985), `filesystem:` nav (VRP: `1116446`, VRP2.txt#5009), `javascript:` in `srcdoc` (VRP: `1006188`, VRP2.txt#11413), `about:srcdoc` nav (VRP2.txt#11413, #1185), iOS `javascript:` (VRP2.txt#8077), incorrect directive handling (`script-src-elem`/`script-src-attr` VRP: `1288035`, `default-src 'strict-dynamic'` VRP2.txt#11841). Extension CSP bypasses (VRP2.txt#589). See [content_security_policy.md](content_security_policy.md).
@@ -112,11 +112,11 @@ This section provides actionable tips for security research in Chromium, informe
         *   *History/Visited Links:* SoftNav+paint (VRP: `1459093`), CSS Paint API (VRP: `680214`), CSS transitions (VRP: `1211002`, VRP2.txt#12845).
         *   *Environment/Other:* Env var leaks via file pickers/downloads (VRP: `1247389`, `1310461`, `1322058`, `1310462`, VRP2.txt#1102, #2919, #2935, #2980). Keystroke timing leaks (VRP: `1315899`, VRP2.txt#4417). See [performance_apis.md](performance_apis.md).
     *   **API Misuse/Interaction:** PaymentRequest API bypasses (VRP: `40072274`, VRP2.txt#4303). Push Messaging API flaws (VRP: `1275626`). Content Index API origin checks (VRP: `1263530`, `1263528`). Scroll inference via Text Fragments (VRP: `1400345`). File System Access API interaction with downloads (VRP: `1428743`). Reading local files via `registerProtocolHandler` (VRP: `971188`). WebRTC port exhaustion (VRP2.txt#6058). Permission Element tapjacking/overlay (VRP2.txt#7863). User Activation abuse (VRP2.txt#9606). Cross-origin fetch leaking objects (VRP2.txt#6873).
-*   **Specific APIs:** WebTransport, WebCodecs ([webcodecs.md](webcodecs.md)), WebGPU ([webgpu.md](webgpu.md)), WebXR ([webxr.md](webxr.md)), FedCM ([fedcm.md](fedcm.md)), Web Share API ([webshare.md](webshare.md)), Web Bluetooth ([bluetooth.md](bluetooth.md)), Web USB ([webusb.md](webusb.md)), Web Serial ([webserial.md](webserial.md)), Portals ([portals.md](portals.md)), File System API ([file_system_access.md](file_system_access.md)), Push Messaging API ([push_messaging.md](push_messaging.md)), Translate API ([translation_ui.md](translation_ui.md)?), PaymentRequest API ([payments.md](payments.md)), BackgroundFetch API ([background_fetch.md](background_fetch.md)), Content Index API, Text Fragments, FencedFrames ([fenced_frames.md](fenced_frames.md)), Service Workers ([service_workers.md](service_workers.md)), SharedWorker ([worker_threads.md](worker_threads.md)?), `registerProtocolHandler`.
+*   **Specific APIs:** WebTransport, WebCodecs ([webcodecs.md](webcodecs.md)), WebGPU ([webgpu.md](webgpu.md)), WebXR ([webxr.md](webxr.md)), FedCM ([fedcm.md](fedcm.md)), Web Share API ([webshare.md](webshare.md)), Web Bluetooth ([bluetooth.md](bluetooth.md)), Web USB ([webusb.md](webusb.md)), Web Serial ([webserial.md](webserial.md)), Portals ([portals.md](portals.md)), File System API ([file_system_access.md](file_system_access.md)), Push Messaging API ([push_messaging.md](push_messaging.md)), Translate API ([translation_ui.md](translation_ui.md)), PaymentRequest API ([payments.md](payments.md)), BackgroundFetch API ([background_fetch.md](background_fetch.md)), Content Index API ([content_index.md](content_index.md)), Text Fragments ([text_fragments.md](text_fragments.md)), FencedFrames ([fenced_frames.md](fenced_frames.md)), Service Workers ([service_workers.md](service_workers.md)), SharedWorker ([worker_threads.md](worker_threads.md)), `registerProtocolHandler` ([protocol_handler.md](protocol_handler.md)).
 
 **6. Filesystem & Scheme Handling (Medium Likelihood, Variable VRP Value):**
 
-*   **Focus:** Analyze browser handling of file interactions (`<input type=file>`, drag/drop, File System Access API), special URL schemes (`file://`, `filesystem://`, `content://`, `intent://`, `javascript:`, `data:`, `blob:`, `chrome*://`, `fido://`), and downloads, focusing on security boundaries, information leakage, and policy bypasses. See [file_system_access.md](file_system_access.md), [downloads.md](downloads.md), [intents.md](intents.md)?.
+*   **Focus:** Analyze browser handling of file interactions (`<input type=file>`, drag/drop, File System Access API), special URL schemes (`file://`, `filesystem://`, `content://`, `intent://`, `javascript:`, `data:`, `blob:`, `chrome*://`, `fido://`), and downloads, focusing on security boundaries, information leakage, and policy bypasses. See [file_system_access.md](file_system_access.md), [downloads.md](downloads.md), [intents.md](intents.md).
 *   **Techniques & VRP Patterns:**
     *   **Local File Access/Disclosure:**
         *   *Extensions:* Reading files via DevTools debugger interaction (VRP2.txt#1116444, #1116445, #6009, #7621), `downloads` permission + FSA (VRP: `1428743`), `input[type=file]` + symlinks (VRP: `1378484`, `1381634`, VRP2.txt#10231), `sourceMappingURL` (VRP: `1349146`, `1419604`, `1429241`, VRP2.txt#2033, #5278, #5293), `registerProtocolHandler` (VRP: `971188`), `.url` files (VRP: `1303486`), `SharedWorker` (VRP2.txt#670), general `<all_urls>` permission bypasses (VRP2.txt#1216, #5360, #15849).
@@ -150,12 +150,12 @@ This list prioritizes components based on a combination of VRP value and frequen
 *   **High VRP / High Frequency:**
     *   Chromium > Internals > Sandbox > SiteIsolation ([site_isolation.md](site_isolation.md)) - VRP: $20,000
     *   Chromium > Installer & Updater (Windows/macOS) ([installer_security.md](installer_security.md)) - VRP: $20,000+
-    *   Chromium > Mobile > WebView ([android_webview_app_defined_websites.md](android_webview_app_defined_websites.md)) - VRP: $15,000
+    *   Chromium > Mobile > WebView ([android_webview.md](android_webview.md)) - VRP: $15,000
     *   Chromium > UI > Browser > Autofill > Payments ([payments.md](payments.md)) - VRP: $10,000
     *   Chromium > UI > Browser > Omnibox ([omnibox.md](omnibox.md)) - VRP: $8,500
     *   Chromium > Extensions ([extension_security.md](extension_security.md)) - VRP: $7,000+
     *   Chromium > UI > Browser > WebApps ([web_app_identity.md](web_app_identity.md)) - VRP: $5,000
-    *   Chromium > Blink > Forms > Autofill ([autofill.md](autofill.md)) / [autofill_ui.md](autofill_ui.md) - VRP: $5,000
+    *   Chromium > Blink > Forms > Autofill ([autofill.md](autofill.md)) - VRP: $5,000
     *   Chromium > Blink > Media > PictureInPicture ([picture_in_picture.md](picture_in_picture.md)) - VRP: $4,000
     *   Chromium > UI > Browser > Permissions > Prompts ([permissions.md](permissions.md)) - VRP: $4,000
 *   **Medium VRP / Medium Frequency:**
@@ -174,7 +174,10 @@ This list prioritizes components based on a combination of VRP value and frequen
     *   Chromium > Blink > Input ([input.md](input.md)) - VRP: $2,000
     *   Chromium > Blink > Portals ([portals.md](portals.md)) - VRP: $2,000
     *   Chromium > UI > Browser > SafeBrowsing ([safe_browsing_service.md](safe_browsing_service.md)) - VRP: $2,000
-*   **Lower VRP / Lower Frequency:**
+    *   Chromium > Blink > ServiceWorkers ([service_workers.md](service_workers.md)) - VRP: ~$2k (Based on related bypasses)
+    *   Chromium > Internals > Security > DevTools ([devtools.md](devtools.md)) - VRP: Variable (High via Debugger)
+    *   Chromium > Internals > GPU Process ([gpu_process.md](gpu_process.md)) - VRP: $0 (High potential for SBX/MemSafety)
+*   **Lower VRP / Lower Frequency / Emerging Tech:**
     *   Chromium > Blink > DataTransfer ([drag_and_drop.md](drag_and_drop.md)) - VRP: $1,000
     *   Chromium > UI > Security > UrlFormatting ([url_formatting.md](url_formatting.md)) - VRP: $1,000
     *   Chromium > UI > Browser > TopChrome > SidePanel ([side_panel.md](side_panel.md)) - VRP: $1,000
@@ -182,5 +185,17 @@ This list prioritizes components based on a combination of VRP value and frequen
     *   Chromium > Internals > Plugins > PDF ([plugin_security.md](plugin_security.md)) - VRP: $500
     *   Chromium > Blink > PerformanceAPIs ([performance_apis.md](performance_apis.md)) - VRP: $0
     *   Chromium > Infra > LUCI ([infra_luci.md](infra_luci.md)) - VRP: $0
+    *   Chromium > Blink > Media > WebCodecs ([webcodecs.md](webcodecs.md)) - VRP: $0 (Likely High potential)
+    *   Chromium > Blink > WebGPU ([webgpu.md](webgpu.md)) - VRP: $0 (Likely High potential)
+    *   Chromium > Blink > WebXR ([webxr.md](webxr.md)) - VRP: $0 (Likely Medium potential)
+    *   Chromium > Blink > BackgroundFetch ([background_fetch.md](background_fetch.md)) - VRP: $0 (Related to $3k SameSite)
+    *   Chromium > Blink > PushMessaging ([push_messaging.md](push_messaging.md)) - VRP: $0 (Related to $1k IPC bypass)
+    *   Chromium > Blink > SecurityFeature > FencedFrames ([fenced_frames.md](fenced_frames.md)) - VRP: $0 (Related to $2k PiP / File access)
+    *   Chromium > Mojo IPC Framework ([mojo.md](mojo.md)) - VRP: Variable (High potential)
+    *   Chromium > Blink > Workers > Shared Workers ([worker_threads.md](worker_threads.md)) - VRP: $0 (Related to file read VRP)
+    *   Chromium > UI > Browser > Translate ([translation_ui.md](translation_ui.md)) - VRP: $0 (General UI patterns apply)
+    *   Chromium > Blink > Navigation > Text Fragments ([text_fragments.md](text_fragments.md)) - VRP: $0 (Related to $1.4k side channel)
+    *   Chromium > Blink > Content Index API ([content_index.md](content_index.md)) - VRP: $0 (Related to $1k IPC bypass)
+    *   Chromium > Blink > Custom Handlers > Protocol Handler ([protocol_handler.md](protocol_handler.md)) - VRP: $0 (Related to $9k+ file read)
 
 By focusing on these VRP-informed areas and techniques, and by continuously updating the wiki, we can improve Chromium security research effectiveness.
