@@ -13,7 +13,10 @@ The `chrome.debugger` API presents a significant attack surface due to its high 
 
 *   **Insufficient Permission/Policy Enforcement:** While checks like `ExtensionMayAttachToURL` and `ExtensionMayAttachToAgentHost` exist, they might be bypassed in certain scenarios or specific protocol methods might lack checks.
     *   **VRP Pattern (Policy Bypass):** Extensions using `chrome.debugger` could bypass the `runtime_blocked_hosts` enterprise policy to read cookies (`Network.getAllCookies` - VRP: `40060283`; VRP2.txt Line 8615), capture screenshots, or potentially perform other actions. Attaching via `targetId` sometimes historically bypassed profile/incognito checks (VRP: `40056776`). See also [policy.md](policy.md).
-    *   **VRP Pattern (File Access Bypass):** Extensions without "Allow access to file URLs" could navigate frames to `file://` URLs (`Page.navigate` - VRP: `40060173`; VRP2.txt Line 7661) or capture their content (`Page.captureSnapshot` / `Page.captureScreenshot` - VRP2.txt Line 6009, 7621, 3520), or read files directly (`DOM.setFileInputFiles` - VRP2.txt Line 15188). See also [downloads.md](downloads.md).
+    *   **VRP Pattern (File Access Bypass):** Extensions without "Allow access to file URLs" permission could:
+        *   Navigate frames to `file://` URLs (`Page.navigate` - VRP: `40060173`; VRP2.txt Line 7661).
+        *   Read local file content using `Page.captureSnapshot` / `Page.captureScreenshot`. The browser-side handler (`PageHandler::CaptureSnapshot`) delegates to `WebContents::GenerateMHTML`, which historically failed to re-verify file access permissions for the target URL before serializing content. (VRP2.txt#1116444, #1116445, #3520, #6009, #7621). See [devtools.md](devtools.md).
+        *   Read local files using `DOM.setFileInputFiles` (VRP2.txt Line 15188). See also [downloads.md](downloads.md).
     *   **VRP Pattern (Cross-Profile/Incognito Access):** Historically, using `targetId` instead of `tabId` allowed extensions without incognito access to list URLs and send commands to incognito tabs or tabs in other profiles (VRP: `40056776`). Requires strict validation in `DebuggerGetTargetsFunction` and `DebuggerAttachFunction` when using `targetId`.
 
 *   **Sandbox Escapes via Privileged Targets/Actions:** Attaching to privileged pages or using specific protocol methods can lead to sandbox escapes.
@@ -72,7 +75,7 @@ bool ExtensionMayAttachToURL(...) {
 
 *   `DebuggerGetTargetsFunction::RunOnIOThread()`: Fetches all available targets (`DevToolsAgentHost::GetOrCreateAll()`) and then filters them based on `ExtensionMayAttachToAgentHost`.
 *   `DebuggerAttachFunction::RunOnIOThread()`: Retrieves the specific target (`DevToolsAgentHost::GetForId` or logic for `tabId`/`extensionId`) and validates attach permission using `ExtensionMayAttachToAgentHost`.
-*   `DebuggerSendCommandFunction::RunOnIOThread()`: Finds the `DevToolsAgentHost` and client host, then forwards the raw command string via `agent_host_->DispatchProtocolMessage`. **Crucially, this relies on the DevTools backend handler for the specific command to perform any necessary security checks related to the command's parameters or intended action.** This appears to be where many VRP bypasses occurred (e.g., `Network.getAllCookies` didn't check `runtime_blocked_hosts`).
+*   `DebuggerSendCommandFunction::RunOnIOThread()`: Finds the `DevToolsAgentHost` and client host, then forwards the raw command string via `agent_host_->DispatchProtocolMessage`. **Crucially, this relies on the DevTools backend handler for the specific command to perform any necessary security checks related to the command's parameters or intended action.** This appears to be where many VRP bypasses occurred (e.g., `Network.getAllCookies`, `Page.captureSnapshot`).
 *   `DebuggerEventRouter::ToolToTargetSentMessage`: Handles events from the target, routing them to the extension listener.
 *   `DebuggerAPI::DetachClientHost`: Handles detachment logic.
 *   `RenderFrameDevToolsAgentHost::OnNavigationRequestWillBeSent`: Contains logic to detach debugger if navigating to disallowed URL (e.g., WebUI), but races can occur (VRP2.txt Line 5705).
@@ -92,10 +95,12 @@ bool ExtensionMayAttachToURL(...) {
     *   Target/Attach: #331 (`setAutoAttach`+`sendMessageToTarget`), #16364 (`attachToTarget`)
     *   Navigation: #7661 (`Page.navigate` file://), #1487 ( privileged nav attach bypass), #6034 (navigate unattached frame)
     *   Policy Bypass: #8615 (`runtime_blocked_hosts` cookie bypass)
-    *   File Access: #6009 (`captureSnapshot` file://), #7621 (`captureSnapshot` file://), #3520 (`captureSnapshot` file://), #15188 (`setFileInputFiles`)
+    *   File Access: #1116444, #1116445, #3520, #6009, #7621 (`captureSnapshot` file://), #15188 (`setFileInputFiles`)
     *   WebUI/Privileged Page Injection: #67 (`inspectedWindow.reload` race + `chrome://policy`), #5705 (Re-attach mid-nav to WebUI), #1446 (Re-attach after crash WebUI), #509 (`chrome://downloads` interaction), #647 (`chrome://feedback` interaction), #11249 (DevTools msg validation), #12783 (DevTools param sanitization), #12809 (DevTools param sanitization), #13361 (DevTools remote script)
     *   Input Synthesis Escape: #351 (`dispatchKeyEvent`+WebUI), #1178 (`synthesizeTapGesture`+WebUI)
     *   Download Bypass: #16391 (`downloadBehavior`)
     *   Other: #7982 (General SBX via devtools)
 
 *(Many VRPs involved chrome.debugger, highlighting its sensitivity. This list focuses on those revealing core API or permission logic flaws).*
+
+*(See also [devtools.md](devtools.md), [ipc.md](ipc.md), [extension_security.md](extension_security.md))*
