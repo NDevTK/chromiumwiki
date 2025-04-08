@@ -96,3 +96,5 @@ Site isolation is fundamental to maintaining secure context guarantees. By isola
 
 ## 8. Privacy Implications
 Site isolation enhances privacy by preventing cross-site tracking through direct script interaction or shared process resources. However, care must be taken to ensure that the isolation mechanisms themselves don't introduce new privacy-leaking side channels (e.g., via process allocation timing, cache behavior - VRP2.txt#542). Storage partitioning, managed partly through `RenderProcessHostImpl`, is also crucial for privacy.
+
+*(See also: [ipc.md](ipc.md), [mojo.md](mojo.md), [navigation_request.md](navigation_request.md), [service_workers.md](service_workers.md), [worker_threads.md](worker_threads.md), [fenced_frames.md](fenced_frames.md), [portals.md](portals.md))*
