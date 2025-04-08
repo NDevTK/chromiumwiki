@@ -23,6 +23,7 @@
     *   **VRP Pattern (State Confusion):** Race conditions or incorrect state management in `PermissionRequestManager` leading to dangling pointers or incorrect grant state after request cancellation/finalization (UAF VRP: `1424437`, VRP2.txt#1964).
     *   **VRP Pattern (Scope/Context Errors):** Incorrectly determining the requesting origin or context (e.g., iframe vs top-level), potentially leading to incorrect permission application. Check `VerifyContextOfCurrentDocument`.
     *   **VRP Pattern (Extension Permission Issues):** Extensions escalating privileges beyond granted permissions, potentially involving interaction with permission APIs or prompts (e.g., leaking tab info VRP: `1306167`). See [extensions_api.md](extensions_api.md).
+    *   **VRP Pattern (Interaction with other APIs for Escalation):** While not direct permission bypasses, flaws in permission handling/state might be exploitable *in combination* with other APIs (e.g., Downloads API `onDeterminingFilename`, File System Access API) to achieve broader goals like unauthorized file access. See [downloads.md](downloads.md), [file_system_access.md](file_system_access.md). (Relevant to VRPs like `1428743`).
 *   **Permission Policy Bypass:** Circumventing restrictions defined by the Permissions Policy (`//components/permissions_policy/`). See [permissions_policy.md](permissions_policy.md).
 *   **Information Leaks:** APIs related to permissions leaking information cross-origin (e.g., status queries).
 
@@ -51,6 +52,7 @@
 *   **`PermissionRequestManager` State:** Perform a detailed state machine analysis of `PermissionRequestManager`, focusing on request cancellation, duplication, and finishing logic to prevent UAF/state confusion bugs (VRP: `1424437`).
 *   **Cross-Component Obscuring:** Test interactions between permission prompts and *all* potential overlaying elements (PiP, FedCM, Extensions, Side Panel, System Notifications, Custom Cursors).
 *   **Permission Policy Interaction:** How does Permissions Policy interact with standard permission prompts and PEPC?
+*   **Interaction with Other APIs:** Explore how permission state/UI interactions could be combined with other APIs (Downloads, FSA, etc.) in exploit chains.
 
 ## 6. Related VRP Reports
 *   **UI Obscuring:** VRP: `342194497` (PiP), `40058873` (Extension Popup)
@@ -62,3 +64,4 @@
 *   **Extension Interaction:** VRP: `1306167` (Info leak potentially enabling permission abuse), VRP2.txt#12352 (Extension obscuring prompt)
 
 *(Note: This component is tightly coupled with UI elements ([autofill.md](autofill.md), [input.md](input.md)) and specific features like Geolocation, Media Capture etc.)*
+*(See also: [extensions_api.md](extensions_api.md), [downloads.md](downloads.md), [file_system_access.md](file_system_access.md))*
