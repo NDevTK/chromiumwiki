@@ -12,7 +12,7 @@
 
 ## 2. Potential Logic Flaws & VRP Relevance
 *   **UI Obscuring/Spoofing:** The FedCM UI (especially the bubble dialog) can obscure or be obscured by other UI elements, leading to user confusion or hidden interactions.
-    *   **VRP Pattern (FedCM Obscures Autofill):** FedCM bubble dialog rendering over Autofill prompts, potentially enabling hidden autofill selection. (VRP: `339481295`, `340893685`; VRP2.txt#7963). See [autofill.md](autofill.md).
+    *   **VRP Pattern (FedCM Obscures Autofill):** FedCM bubble dialog rendering over Autofill prompts, potentially enabling hidden autofill selection. The bubble **does not steal focus upon showing** (similar to the effect of `ShowInactive`), which allows the Autofill prompt underneath to remain active (VRP: `339481295`, `340893685`; VRP2.txt#7963 context notes this behavior). See [autofill.md](autofill.md).
     *   **VRP Pattern (PiP Obscures FedCM):** Video/Document Picture-in-Picture windows obscuring the FedCM prompt bubble, potentially allowing hidden login attempts. (VRP: `339654392`; VRP2.txt#12993). See [picture_in_picture.md](picture_in_picture.md).
     *   **VRP Pattern (Input Protections):** The lack of robust input protections (e.g., interaction delays similar to Autofill/Permissions) when the FedCM bubble is obscured allowed hidden logins via keyboard interaction (Related to VRP: `339654392`).
 *   **Incorrect UI Placement:** FedCM UI rendering outside the bounds of its initiating window, especially in non-maximized or small windows.
@@ -25,7 +25,7 @@
 
 ## 3. Further Analysis and Potential Issues
 *   **Dialog Types:** Analyze differences in security posture between the bubble (`AccountSelectionBubbleView`) and modal (`FedCmModalDialogView`) FedCM dialogs regarding obscuring, placement, and focus handling.
-*   **Focus Management:** How does focus shift when FedCM UI appears and disappears? Can focus manipulation be used in attacks? The use of `ShowInactive()` (VRP2.txt#7963 context) was key in allowing Autofill obscuring.
+*   **Focus Management:** How does focus shift when FedCM UI appears and disappears? Can focus manipulation be used in attacks? The lack of focus stealing by the bubble (similar effect to `ShowInactive` - see VRP2.txt#7963 context) was key in allowing Autofill obscuring. Investigate the widget creation and showing logic in base classes like `BubbleDialogDelegateView`.
 *   **Origin Handling:** Deep dive into `webid::FormatUrlForDisplay` and its callers (`FederatedAuthRequestImpl::GetTopFrameOriginForDisplay`, `GetEmbeddingOrigin`) to ensure opaque origins are handled securely in all UI states (accounts dialog, error dialogs, loading dialogs). (VRP: `340893685`).
 *   **Window Interaction:** How does FedCM behave when initiated from different window types (popups, PWAs, potentially extension contexts)? Does the UI placement logic (`AccountSelectionBubbleView::GetBubbleBounds`) handle all scenarios correctly? (VRP: `338233148`).
 *   **Input Protection:** Does the FedCM UI implement sufficient input protection (like `InputEventActivationProtector` or delays) to prevent clickjacking/tapjacking/keyjacking, especially when potentially obscured? (VRP: `339654392` implies this was lacking).
@@ -35,11 +35,12 @@
 *   **Error Handling:** Ensure error messages within the FedCM flow don't leak sensitive information.
 
 ## 4. Code Analysis
-*   `FederatedAuthRequestImpl`: Manages the overall FedCM request flow, permission checks, calls to UI. Methods like `ShowAccountsDialog`, `ShowFailureDialog`, `FormatOriginForDisplay`, `GetEmbeddingOrigin`.
+*   `FederatedAuthRequestImpl`: Manages the overall FedCM request flow, permission checks, calls to UI via `RequestDialogController`. Methods like `ShowAccountsDialog`, `ShowFailureDialog`, `FormatOriginForDisplay`, `GetEmbeddingOrigin`.
+*   `IdentityDialogController` (`chrome/browser/ui/webid/`): Implements `RequestDialogController`, creates and manages platform-specific views.
 *   `FederatedProvider`: Handles communication with IdPs for FedCM.
-*   `AccountSelectionBubbleView` / `FedCmModalDialogView`: Desktop UI implementations.
+*   `AccountSelectionBubbleView` / `FedCmModalDialogView` (`chrome/browser/ui/views/webid/`): Desktop UI implementations. Inherit from `BubbleDialogDelegateView`.
     *   `GetBubbleBounds()` (in BubbleView): Overrides default bubble placement, potential source of positioning issues (VRP: `338233148`).
-    *   `Show()`/`ShowInactive()`: Check how dialog visibility and focus are managed (`ShowInactive` used in VRP2.txt#7963 context).
+    *   Check base class (`BubbleDialogDelegateView`) for widget creation (`CreateBubble`) and showing logic (`Show`/`ShowInactive`).
     *   Event Handling: How user clicks/interactions on accounts are processed. Need input protection checks.
 *   `webid::FormatUrlForDisplay`: Utility for formatting origins. Needs robust opaque origin handling (VRP: `340893685`).
 *   `CredentialsContainer` (Blink): Renderer-side API for credential management, including FedCM.
@@ -56,13 +57,9 @@
 *   **Privacy aspects:** Analyze potential tracking vectors or information leaks related to IdP/RP communication mediated by the browser within the FedCM context.
 
 ## 6. Related VRP Reports
-*   VRP: `339481295` ($3000): Autofill prompt can be obscured by FedCM bubble dialog
-*   VRP: `340893685` ($2000): FedCM prompts do not show origin if initiator origin is opaque
-*   VRP: `339654392` ($2000): FedCM prompt bubble can be obscured by Video/Document PiP window, allow for hidden login
-*   VRP: `338233148` ($2000): FedCM prompt bubble renders outside of opening window, causing various issues
-*   VRP2.txt#7963: (Context for VRP: 339481295/340893685) Analysis related to `ShowInactive` allowing Autofill obscuring.
-*   VRP2.txt#12993: (Context for VRP: 339654392) Analysis of PiP obscuring FedCM bubble.
-*   VRP2.txt#13066: (Context for VRP: 340893685) Analysis of opaque origin handling.
-*   VRP2.txt#13024: (Context for VRP: 338233148) Analysis of bubble placement issues.
+*   VRP: `339481295` ($3000): Autofill prompt can be obscured by FedCM bubble dialog (Context: VRP2.txt#7963)
+*   VRP: `340893685` ($2000): FedCM prompts do not show origin if initiator origin is opaque (Context: VRP2.txt#13066)
+*   VRP: `339654392` ($2000): FedCM prompt bubble can be obscured by Video/Document PiP window, allow for hidden login (Context: VRP2.txt#12993)
+*   VRP: `338233148` ($2000): FedCM prompt bubble renders outside of opening window, causing various issues (Context: VRP2.txt#13024)
 
 *(See also [autofill.md](autofill.md), [picture_in_picture.md](picture_in_picture.md), [privacy.md](privacy.md))*
