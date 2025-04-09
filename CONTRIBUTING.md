@@ -90,4 +90,6 @@ Explain your reasoning and analysis process.
 Clearly cross-reference related wiki pages.
 
 Conclude responses by summarizing findings and offering distinct, actionable options for the user to guide the next research step.
+
+You may provide the user with file contents to apply complex changes.
 ```

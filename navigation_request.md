@@ -17,17 +17,20 @@
 *   **Process Selection/Commit Logic:** Errors in selecting the correct `RenderFrameHost` (`SelectFrameHostFor*` methods) or `SiteInstance`, or flaws in the commit process (`CommitNavigation`, `ReadyToCommitNavigation`, `CommitErrorPage`), potentially allowing navigation in an inappropriate process.
 *   **Interaction with other Security Mechanisms:** Flaws in how `NavigationRequest` interacts with sandboxing, `ChildProcessSecurityPolicy`, `BrowsingInstance` swaps, or `NavigationHandle`.
 *   **Handling of Special URLs/Cases:** Incorrect handling of `about:blank`, `about:srcdoc`, data URLs, downloads (`ComputeDownloadPolicy`), prerendering (`SetPrerenderActivationNavigationState`), or fenced frames (`is_embedder_initiated_fenced_frame_navigation_`) could lead to isolation bypasses or information leaks. (VRP2.txt: 1690 - `about:srcdoc` history leak).
+*   **Bypassing Navigation for Downloads (`DownloadURL` Drag):** Downloads initiated via `setData('downloadurl', ...)` and drag-and-drop do *not* typically create a standard `NavigationRequest`. They are handled separately via `DragDownloadFile` -> `DownloadManager::DownloadUrl`. This distinct path might have different security properties (e.g., regarding SameSite cookie handling - VRP: `40060358`). See [drag_and_drop.md](drag_and_drop.md).
 
 ## 3. Further Analysis and Potential Issues
 
 *   **UrlInfo/SiteInfo/IsolationContext Logic:** Deep dive into how these structures are populated and used across different navigation types (browser-init, renderer-init, sync commit) and schemes. How are opaque origins consistently handled?
 *   **Redirect Chain Security:** Analyze the complete handling of redirect chains, including multiple redirects, cross-origin redirects, and scheme changes. Ensure security policies are consistently applied at each step.
+*   **Bypassing Navigation for Downloads (`DownloadURL` Drag):** Downloads initiated via `setData('downloadurl', ...)` and drag-and-drop do *not* create a standard `NavigationRequest`. They are handled separately via `DragDownloadFile` -> `DownloadManager::DownloadUrl`. This distinct path might have different security properties (e.g., regarding SameSite cookie handling - VRP: `40060358`). See [drag_and_drop.md](drag_and_drop.md).
 *   **Throttle and Deferral Interactions:** Examine the interaction between `NavigationThrottles` (which can cancel/defer) and `CommitDeferringConditions`. Can these interactions lead to unexpected states or bypasses?
 *   **Error Handling Paths:** Audit the logic for handling navigation failures (`OnRequestFailedInternal`, `CommitErrorPage`, `CANCELING` state). Are error pages always committed in the correct process? Can error handling be manipulated?
 *   **Origin Calculation:** Scrutinize `GetOriginForURLLoaderFactoryBeforeResponse` and `GetOriginForURLLoaderFactoryAfterResponse`. Are these always returning the correct origin, especially considering redirects and potential process swaps?
 *   **Policy Container Management:** How is the `policy_container_builder_` managed throughout the navigation, especially across redirects and potential process changes?
 *   **Interaction with NavigationHandle:** How does the state exposed via `NavigationHandle` align with the internal state of `NavigationRequest`? Can discrepancies be exploited?
 *   **Fenced Frames & Prerendering:** How does `NavigationRequest` handle the specific security requirements and state management for fenced frames and prerender activations?
+*   **Interaction with Ongoing UI Operations:** How does navigation state interact with concurrent UI operations like drag-and-drop? Ensure navigations don't disrupt security-critical state tracked by these operations (e.g., see `AsyncDropNavigationObserver` in `WebContentsViewAura`'s drag handling).
 
 ## 4. Code Analysis
 

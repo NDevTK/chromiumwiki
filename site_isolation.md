@@ -48,6 +48,7 @@ Analysis of past vulnerabilities reveals recurring patterns used to bypass Site 
     *   Reader Mode loading untrusted content or having weak sanitization, potentially leading to JS execution in privileged context (VRP2.txt#6759).
     *   `registerProtocolHandler` allowing registration of arbitrary schemes/URLs from compromised renderers (VRP2.txt#12036).
     *   Fetch API leaking cross-origin objects (VRP2.txt#6873).
+*   **UI Interaction Checks (Drag and Drop):** Browser-side checks exist to prevent certain interactions between cross-origin frames within the same page. Example: `WebContentsViewDragSecurityInfo::IsValidDragTarget` explicitly checks if the source and target `RenderWidgetHostImpl` of an intra-page drag belong to the same `SiteInstanceGroup`, blocking the drag if they differ. This prevents cross-site data leaks via drag-and-drop within a single tab. See [drag_and_drop.md](drag_and_drop.md) for the full flow.
 
 ## 4. Key Components Involved
 The following components are crucial for implementing site isolation, and each presents potential areas for security logic flaws:
