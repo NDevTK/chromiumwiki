@@ -2,20 +2,29 @@
 
 ## 1. Component Focus
 *   **Functionality:** Implements the `sandbox` attribute for `<iframe>` elements ([Spec](https://html.spec.whatwg.org/multipage/iframe-embed-object.html#attr-iframe-sandbox)), restricting the capabilities of the embedded content. Also interacts with the `sandbox` directive in Content Security Policy (CSP).
-*   **Key Logic:** Parsing the `sandbox` attribute (`HTMLIFrameElement::ParseSandboxAttribute`), combining attribute flags with CSP sandbox flags (`NavigationPolicyContainerBuilder::ComputeSandboxFlags`), inheriting flags to nested frames/popups (partly in `CreateNewWindow` and `FrameTree::FindOrCreateFrameForNavigation`?), enforcing restrictions during navigation (`NavigationRequest`, `FrameLoader`), popup creation (`LocalDOMWindow::open`), script execution, form submission, downloads, etc.
+*   **Key Logic:** Parsing the `sandbox` attribute (`HTMLIFrameElement::ParseSandboxAttribute`), applying CSP sandbox directives (`DocumentLoader::InitializeWindow` -> `CreateCSP` -> `LocalDOMWindow::SetContentSecurityPolicy`), combining attribute flags with CSP sandbox flags (`NavigationPolicyContainerBuilder::ComputeSandboxFlags` before commit), inheriting flags to nested frames/popups (partly in Blink's `CreateNewWindow` for initial calculation, browser's `RenderFrameHostImpl::InitializePolicyContainerHost` for application to initial empty doc, and `FrameTree::FindOrCreateFrameForNavigation` for routing), enforcing restrictions during navigation (`NavigationRequest`, `FrameLoader`), popup creation (`LocalDOMWindow::open`), script execution, form submission, downloads, etc.
 *   **Core Files:**
     *   `third_party/blink/renderer/core/frame/local_dom_window.cc` (Implements `window.open`)
-    *   `third_party/blink/renderer/core/page/create_window.cc` (Helper for `window.open`, contains `CreateNewWindow`)
+    *   `third_party/blink/renderer/core/page/create_window.cc` (Helper for `window.open`, contains Blink's `CreateNewWindow`)
     *   `third_party/blink/renderer/core/page/frame_tree.cc` (Handles `FindOrCreateFrameForNavigation`)
     *   `third_party/blink/renderer/core/html/html_iframe_element.cc` (Parsing attribute)
     *   `third_party/blink/renderer/core/frame/sandbox_flags.h`
+    *   `third_party/blink/renderer/core/loader/document_loader.cc` (Applies CSP during commit)
+    *   `third_party/blink/renderer/core/frame/csp/content_security_policy.cc` (Handles CSP parsing/application)
+    *   `content/browser/renderer_host/render_frame_host_impl.cc` (Contains browser-side `CreateNewWindow` and `InitializePolicyContainerHost`)
     *   `content/browser/renderer_host/navigation_policy_container_builder.cc` (Computes final flags before commit)
     *   `content/browser/renderer_host/navigation_request.cc` (Uses final flags)
     *   `third_party/blink/renderer/core/loader/frame_loader.cc`
 
 ## 2. Potential Logic Flaws & VRP Relevance
 *   **Bypassing Specific Sandbox Flags:** Finding ways to perform actions restricted by flags like `allow-scripts`, `allow-popups`, `allow-top-navigation`, `allow-downloads`, `allow-same-origin`. This often stems from incorrect flag calculation/inheritance *before* the final commit, or specific interactions.
-    *   **VRP Pattern (`allow-popups-to-escape-sandbox` Bypass):** Popups opened from sandboxed frames incorrectly inheriting opener's capabilities or losing restrictions. **Analysis of `CreateNewWindow` shows it correctly determines the initial sandbox flags to pass to the browser based on the opener's flags and the presence/absence of `allow-popups-to-escape-sandbox`.** Bypass likely involves **intermediate navigations** within the sandboxed context before `window.open` is called (changing the context `CreateNewWindow` uses), or browser-side logic incorrectly applying the initial flags during popup creation/navigation. (VRP: `40069622`, `40057525`; VRP2.txt#7849, #11992).
+    *   **VRP Pattern (`allow-popups-to-escape-sandbox` Bypass):** Popups opened from sandboxed frames incorrectly inheriting opener's capabilities or losing restrictions.
+        *   **Analysis:**
+            1.  Blink's `CreateNewWindow` determines *initial* popup sandbox flags based on the opener's state (`HTMLIFrameElement` attribute + *currently active* CSP sandbox flags) and `allow-popups-to-escape-sandbox`.
+            2.  These initial flags are passed to the browser.
+            3.  Browser's `RenderFrameHostImpl::InitializePolicyContainerHost` applies these initial flags (combined with opener's CSP sandbox flags from *its* loaded policy container) to the popup's *initial empty document*.
+            4.  Blink's `DocumentLoader::InitializeWindow` applies the *committed document's* CSP sandbox directive when the navigation commits within the iframe.
+        *   **Hypothesis (Refined):** Bypasses likely occur because the opener frame navigates to a same-origin document (Doc B) *before* calling `window.open`. If Doc B's CSP lacks a restrictive `sandbox` directive, its commit (`DocumentLoader::InitializeWindow`) updates the frame's *active* sandbox flags in its `SecurityContext`. *Then*, when `window.open` is called, Blink's `CreateNewWindow` reads these *updated* (less restrictive) flags, leading to the popup inheriting incorrect permissions. (VRP: `40069622`, `40057525`; VRP2.txt#7849, #11992).
     *   **VRP Pattern (`allow-downloads` Bypass):** Triggering downloads from a frame sandboxed without `allow-downloads`. (VRP: `40060695`, VRP2.txt#11682). Interaction with `window.open` + `noopener` (VRP2.txt#1105). **Checks potentially missing in specific download paths (e.g., involving `noopener`).**
     *   **VRP Pattern (`allow-top-navigation` Bypass):** Navigating the top-level frame from a cross-origin iframe without user interaction, even when only `allow-scripts` and `allow-popups` (or similar combinations) are set, but `allow-top-navigation*` is *not*.
         *   Via same-site open redirects or XSS redirects (VRP: `40053936`). **Likely navigation checks failing to account for sandbox post-redirect.**
@@ -30,29 +39,32 @@
 
 ## 3. Further Analysis and Potential Issues
 *   **Flag Combinations:** Synergistic effects?
-*   **Inheritance Logic:** Focus on **intermediate navigation scenarios** before popup creation. How does the context used by `CreateNewWindow` change if the frame calling `window.open` navigated after the initial sandboxed load? Also investigate **browser-side popup creation logic** (`ChromeClient::CreateWindow` implementation and how it uses the initial flags).
+*   **Inheritance Logic:** Focus on **intermediate navigation scenarios** within the sandboxed frame *before* popup creation, specifically how the timing of CSP application (`DocumentLoader::InitializeWindow`) interacts with `window.open` calls (`CreateNewWindow`).
 *   **`allow-same-origin`:** Request handling, process allocation.
 *   **Parsing Robustness.**
-*   **Interaction with Navigation Logic:** Enforcement of *final* computed flags at all stages.
+*   **Interaction with Navigation Logic:** Enforcement of *final* computed flags at all stages, especially after redirects or CSP application.
 *   **Platform Differences (Android Intents).**
 
 ## 4. Code Analysis
-*   `LocalDOMWindow::open`: Handles `noopener` based on features string and context (Fenced Frames, Blob URLs). Calls `FrameTree::FindOrCreateFrameForNavigation`. **Does not directly handle sandbox flag inheritance for popups.**
-*   `FrameTree::FindOrCreateFrameForNavigation`: Finds existing frame or calls `CreateNewWindow`. **Likely involved in setting initial flags for new popup windows based on opener and features.**
-*   `CreateNewWindow` (`create_window.cc`): Performs initial checks (popup blocker, sandbox `allow-popups`), **correctly determines initial `sandbox_flags` to pass to browser based on opener's flags and `allow-popups-to-escape-sandbox`**, calls `ChromeClient::CreateWindow`.
-*   `NavigationPolicyContainerBuilder::ComputeSandboxFlags`: **Computes the final effective sandbox flags before navigation commit, combining iframe attributes, CSP, and potentially inherited flags.**
-*   `HTMLIFrameElement::ParseSandboxAttribute`: Parses attribute string.
-*   `Frame::IsSandboxed(flag)`: Checks currently active flags.
-*   `FrameLoader::CanNavigate`: Checks `allow-top-navigation*`.
-*   Download / Android Intent handling code.
+*   `HTMLIFrameElement::ParseSandboxAttribute` (Blink): Parses `sandbox` attribute string, sets initial flags.
+*   `DocumentLoader::InitializeWindow` (Blink): Called during commit. Creates/Applies `ContentSecurityPolicy` (`CreateCSP`, `SetContentSecurityPolicy`), which updates active sandbox flags via `ContentSecurityPolicy::ApplySandboxFlags`.
+*   `LocalDOMWindow::open` (Blink): Calls `FrameTree::FindOrCreateFrameForNavigation`.
+*   `FrameTree::FindOrCreateFrameForNavigation` (Blink): Finds existing frame or calls Blink's `CreateNewWindow`.
+*   `CreateNewWindow` (`create_window.cc`, Blink): Reads opener's *current* sandbox flags (`IsSandboxed`, `GetSandboxFlags`) and `allow-popups-to-escape-sandbox` to determine *initial* popup flags. Calls `ChromeClient::CreateWindow`.
+*   `ChromeClientImpl::CreateWindowDelegate` (Blink): Bridge, passes initial flags to browser.
+*   `RenderFrameHostImpl::CreateNewWindow` (Browser): Delegates window creation.
+*   `RenderFrameHostImpl::InitializePolicyContainerHost` (Browser): Sets up popup's initial empty document policies, cloning opener's policies and combining initial flags from Blink with opener's CSP sandbox flags.
+*   `NavigationPolicyContainerBuilder::ComputeSandboxFlags` (Browser): Computes *final* flags before commit, combining iframe attributes, CSP headers, etc.
+*   `Frame::IsSandboxed(flag)` (Blink): Checks currently active flags in `SecurityContext`.
+*   `FrameLoader::CanNavigate` (Blink): Checks `allow-top-navigation*`.
 
 ## 5. Areas Requiring Further Investigation
-*   **Thorough review of popup sandbox inheritance in `FrameTree::FindOrCreateFrameForNavigation` and related navigation code.** How are flags determined when `allow-popups-to-escape-sandbox` is set/not set? How do intermediate navigations (e.g., to `about:blank`) affect this? (VRP: `40069622`, `40057525`).
-*   **Browser-Side Popup Creation:** Review the implementation of `ChromeClient::CreateWindow` and subsequent browser-side navigation logic to see how the initial sandbox flags are applied and potentially modified.
-*   **Android `intent://` handling:** Analyze the complete flow of handling `intent://` URLs initiated from sandboxed frames.
-*   **`allow-top-navigation` enforcement:** Re-evaluate checks in `FrameLoader::CanNavigate` against CSP header scenarios (VRP2.txt#4247).
-*   **`allow-downloads` enforcement:** Check download paths involving `noopener` (VRP2.txt#1105).
-*   **`allow-same-origin` isolation:** Audit context/process management (VRP2.txt#6788).
+*   **Verify intermediate navigation timing:** Confirm exact point during `DocumentLoader::CommitNavigation` where `InitializeWindow` (and CSP sandbox application) occurs relative to script execution.
+*   **Browser-Side `RenderFrameHostDelegate::CreateNewWindow`:** Analyze `WebContentsImpl` implementation details.
+*   **Android `intent://` handling:** Complete flow analysis.
+*   **`allow-top-navigation` enforcement:** vs. CSP header timing.
+*   **`allow-downloads` enforcement:** vs. `noopener`.
+*   **`allow-same-origin` isolation:** Context/process management.
 
 ## 6. Related VRP Reports
 *   **`allow-popups-to-escape-sandbox` Bypass:** VRP: `40069622`, `40057525`; VRP2.txt#7849, #11992
