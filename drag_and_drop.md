@@ -1,6 +1,3 @@
-Okay, I have the current content of `chromiumwiki/drag_and_drop.md`. I will restore the full "Code Analysis" list.
-
-```markdown
 # Component: Drag and Drop (Blink DataTransfer & IPC)
 
 ## 1. Component Focus
@@ -115,5 +112,3 @@ Okay, I have the current content of `chromiumwiki/drag_and_drop.md`. I will rest
 *   VRP2.txt#8707 (**SOP bypass via Portal activation during drag - likely involves process changes or renderer-side check bypass, as browser check `IsValidDragTarget` doesn't handle portal state**).
 
 *(See also [downloads.md](downloads.md), [portals.md](portals.md), [ipc.md](ipc.md), [site_isolation.md](site_isolation.md))*
-
-```
