@@ -1,101 +1,114 @@
-# Component: Site Isolation
+# Site Isolation & Process Model
 
 ## 1. Component Focus
-*   **Functionality:** A core security architecture in Chromium designed to mitigate threats like Spectre and compromise by rendering content from different "sites" (usually eTLD+1) in separate sandboxed renderer processes. This prevents one site's process from directly accessing another site's data or interacting with it in unintended ways.
-*   **Key Logic:** Process allocation based on Site URL (`SiteInfo`, `SiteInstance`), enforcement of process locks (`RenderProcessHostImpl`, `ChildProcessSecurityPolicyImpl`), secure handling of navigations and redirects (`NavigationRequest`), isolation of storage (`StoragePartition`), secure inter-process communication (IPC/Mojo).
-*   **Scope:** This page provides an overview focusing on the logic connecting various components to achieve isolation. For deeper details on specific parts, refer to linked pages.
+*   **Functionality:** Encompasses the core mechanisms Chromium uses to separate websites into different processes to mitigate security risks like Spectre and improve robustness. This includes determining site boundaries, assigning sites to processes, managing process locks, and handling exceptions and policies related to isolation.
+*   **Key Logic:** Site definition (`SiteInfo`), SiteInstance assignment (`BrowsingInstance`, `SiteInstanceImpl`, `RenderFrameHostManager`), process allocation (`RenderProcessHostImpl`), process locking (`ProcessLock`), handling of isolated origins and agent clusters (OAC), COOP/COEP enforcement.
+*   **Core Files:**
+    *   `content/browser/site_info.*`
+    *   `content/browser/site_instance_impl.*`
+    *   `content/browser/browsing_instance.*`
+    *   `content/browser/site_instance_group.*`
+    *   `content/browser/renderer_host/render_frame_host_manager.*`
+    *   `content/browser/renderer_host/render_process_host_impl.*`
+    *   `content/browser/child_process_security_policy_impl.*`
+    *   `content/public/browser/site_isolation_policy.*`
 
-## 2. Potential Logic Flaws & VRP Relevance
-Failures in site isolation logic can lead to severe security vulnerabilities, including SOP bypass, cross-site data leakage, and renderer compromise escalation. Key areas include:
+## 2. Key Concepts
+*   **Site:** A security principal, typically scheme + eTLD+1 (e.g., `https://google.com`), but can be finer-grained (origin-level) for isolated origins or OAC. Defined by `SiteInfo`.
+*   **SiteInstance:** Represents a specific site within a `BrowsingInstance`. Typically maps 1:1 to a `SiteInstanceGroup`. See [site_instance.md](site_instance.md).
+*   **BrowsingInstance:** A collection of frames/tabs that can potentially script each other. See [browsing_instance.md](browsing_instance.md).
+*   **SiteInstanceGroup:** A collection of `SiteInstance`s that share a `RenderProcessHost` and `AgentSchedulingGroupHost`. See [site_instance_group.md](site_instance_group.md).
+*   **Process Lock:** A security property associated with a `RenderProcessHost`, restricting which sites/origins it can host. See [process_lock.md](process_lock.md).
+*   **Isolated Origins:** Origins explicitly configured (via policy or command-line) to always require a dedicated process, potentially isolating them more strictly than just by site.
+*   **Origin-Agent-Cluster (OAC):** A header (`Origin-Agent-Cluster: ?1`) allowing origins to request logical and potentially process isolation based on origin rather than site.
+*   **COOP/COEP:** Headers (`Cross-Origin-Opener-Policy`, `Cross-Origin-Embedder-Policy`) enabling cross-origin isolation, unlocking features like `SharedArrayBuffer`. Can influence process model decisions (e.g., requiring BrowsingInstance swaps). See [coop_coep.md](coop_coep.md).
 
-*   **Incorrect Site/Origin Determination:** Errors in classifying URLs into sites (`SiteInfo`) or origins (`UrlInfo`), especially for special schemes or edge cases, leading to incorrect process placement.
-    *   **VRP Relevance:** Issues with `blob:`, `filesystem:`, `data:`, `about:srcdoc`, `javascript:` leading to origin confusion or incorrect process sharing (VRP: `40059251`; VRP2.txt#173, #542, #665, #1508, #1690, #1761, #12127).
-*   **Process Allocation/Reuse Errors:** Placing navigations into the wrong process due to flawed suitability checks (`RenderProcessHostImpl::MayReuseAndIsSuitable`) or incorrect `SiteInstance` management.
-    *   **VRP Relevance:** Reuse of non-sandboxed context for sandboxed iframe (VRP2.txt#6788). Issues related to process sharing involving WebUI bindings (VRP: `40053875`). Data URL process placement after tab restore (VRP2.txt#11669).
-*   **Process Lock Bypass/Errors:** Failure to correctly apply or enforce process locks (`RenderProcessHostImpl::SetProcessLock`), allowing a process restricted to site A to host content from site B.
-*   **Navigation/Redirect Flaws:** Incorrect handling of security context (origin, isolation state, policies) during navigations, redirects, or history traversals (`NavigationRequest`).
-    *   **VRP Relevance:** State confusion after redirects or crashes leading to origin/URL spoofing (VRP: `40057561`, `40064170`; VRP2.txt#9502). Bypasses via same-site redirects (VRP: 150). Leaks via history state (`window.length` VRP: `40059056`, `baseURI` VRP2.txt#15203).
-*   **IPC/Mojo Vulnerabilities:** Flaws in validating messages between processes allowing a compromised renderer (or other process) to perform unauthorized actions in the browser process or another renderer.
-    *   **VRP Relevance:** Insufficient validation allowing compromised renderer to control mouse (`StartDragging` VRP2.txt#4), send messages as other extensions (VRP2.txt#11815), or bypass origin checks in APIs (VRP: `1263530`). Browser process mishandling renderer message (VRP2.txt#370).
-*   **Capability Leaks/SOP Bypass:** Mechanisms allowing isolated processes to gain unintended access to data or capabilities from other origins.
-    *   **VRP Relevance:** Leaks via cache timing/TOCTOU (VRP2.txt#542). Leaks via shared workers with data URLs (VRP2.txt#16560). Leaks via `registerProtocolHandler` bypasses (VRP2.txt#12036). SOP bypass via Portal activation (VRP2.txt#8707).
-*   **Subsystem Interaction Bugs:** Flaws arising from the interaction of site isolation logic with other features (Service Workers, Extensions, WebUI, Special Frame types, Cache, etc.).
-    *   **VRP Relevance:** Service Worker interactions bypassing SameSite/CSP (VRP: `1115438`, `598077`). Extension debugger API bypasses (numerous VRPs, see [extensions_debugger_api.md](extensions_debugger_api.md)). Fenced Frames navigating to `file://` (VRP2.txt#225).
+## 3. Core Isolation Logic
 
-## 3. Known Bypass Techniques and Patterns (from VRP Data)
-Analysis of past vulnerabilities reveals recurring patterns used to bypass Site Isolation and Same-Origin Policy protections:
+### 3.1. Does a Site Require a Dedicated Process? (`SiteInfo::RequiresDedicatedProcess`)
 
-*   **URL Scheme Abuse (`blob:`, `filesystem:`, `data:`, `about:srcdoc`, `javascript:`)**:
-    *   Incorrect origin inheritance or handling for these schemes leading to violations (VRP: `40059251`; VRP2.txt#173, #542, #665, #1508, #1690, #1761, #12127). Example: `blob:` URLs created from `data:` URLs inherit opaque origins treated as same-site (VRP2.txt#12127). `about:srcdoc` session history entries could leak state cross-origin (VRP2.txt#1690). Blob URL origin incorrect after tab restore (VRP2.txt#11669).
-    *   Using these schemes to bypass CSP or other security checks enforced on standard HTTP(S) origins (VRP2.txt#5009, #11413). Example: `javascript:` URLs in portals or iframes executing in the wrong context (VRP2.txt#1508).
-*   **Navigation and Redirect Handling**:
-    *   Origin confusion during navigations, especially involving redirects, `javascript:` URIs, or specific URL schemes like `android-app:` (VRP2.txt#173).
-    *   Bypasses via open redirects or XSS on same-origin/same-site pages, leveraged by cross-origin frames (VRP: 150).
-    *   Race conditions or state mismatches during navigation lifecycle (e.g., race conditions between origin/URL updates and permission checks by DevTools - VRP2.txt#67; URL spoof after crash/failed nav - VRP: `40057561`, `40064170`, VRP2.txt#9502).
-    *   Issues with NavigationEntry management or reuse leading to state confusion (VRP2.txt#173, #1690; VRP2.txt#16678 - subframe state corruption).
-*   **Cache Timing / TOCTOU**:
-    *   Leaking information based on the timing of cache operations (e.g., `GeneratedCodeCache`) due to checks happening before or after potentially attacker-influenced data modification (VRP2.txt#542 - double fetch).
-*   **IPC/Mojo Message Handling**:
-    *   Insufficient validation of IPC messages, allowing compromised renderers to trigger actions they shouldn't (e.g., sending messages as if from an extension VRP2.txt#11815, bypassing origin checks for service worker/Content Index/Push Messaging interactions - VRP: `1263530`, `1263528`, `1275626`). Mishandling renderer messages in browser (VRP2.txt#370). Mouse control (`StartDragging` VRP2.txt#4).
-*   **Special Frames (iframe, portal, fencedframe)**:
-    *   Incorrect sandbox inheritance or enforcement, especially involving popups (`allow-popups-to-escape-sandbox` bypasses - VRP: `40069622`, `40057525`; VRP2.txt#7849, #11992).
-    *   Issues where frame types like Fenced Frames lack necessary browser-process checks or filtering, allowing navigation to restricted schemes like `file://` (VRP2.txt#225).
-    *   Exploiting `about:blank` document reuse logic in sandboxed iframes leading to type system confusion/sandbox escape (VRP2.txt#6788).
-    *   Portal activation allowing drag-and-drop SOP bypass (VRP2.txt#8707).
-*   **Service Worker Interaction**:
-    *   Improperly validating origins or allowing cross-origin fetch interception/manipulation that bypasses SameSite cookies or other restrictions (VRP: `1115438`, VRP2.txt#7521, #11875).
-*   **Specific API Misuse**:
-    *   Reader Mode loading untrusted content or having weak sanitization, potentially leading to JS execution in privileged context (VRP2.txt#6759).
-    *   `registerProtocolHandler` allowing registration of arbitrary schemes/URLs from compromised renderers (VRP2.txt#12036).
-    *   Fetch API leaking cross-origin objects (VRP2.txt#6873).
-*   **UI Interaction Checks (Drag and Drop):** Browser-side checks exist to prevent certain interactions between cross-origin frames within the same page. Example: `WebContentsViewDragSecurityInfo::IsValidDragTarget` explicitly checks if the source and target `RenderWidgetHostImpl` of an intra-page drag belong to the same `SiteInstanceGroup`, blocking the drag if they differ. This prevents cross-site data leaks via drag-and-drop within a single tab. See [drag_and_drop.md](drag_and_drop.md) for the full flow.
+This function determines if a given `SiteInfo` *must* be placed in a dedicated process, preventing it from sharing the default process.
 
-## 4. Key Components Involved
-The following components are crucial for implementing site isolation, and each presents potential areas for security logic flaws:
+**Returns `true` (Dedicated Process Required) if:**
 
-*   **`UrlInfo`**: Packages a `GURL` with state for process allocation decisions. Incorrect state can lead to wrong isolation. See [url_info.md](url_info.md).
-*   **`SiteInfo`**: Represents the "site" of a URL. Logic errors can cause incorrect same-site/cross-site classification. See [site_info.md](site_info.md).
-*   **`SiteInstanceImpl`**: Represents an instance of a site, managing the associated process. Errors in process assignment, reuse checks (`MayReuseAndIsSuitable`), or locking (`SetProcessInternal`, `LockProcessIfNeeded`) are critical. See [site_instance.md](site_instance.md).
-*   **`SiteInstanceGroup`**: Groups `SiteInstance`s sharing a `RenderProcessHost`. Errors in lifecycle management or `SiteInstance` association can break isolation. See [site_instance_group.md](site_instance_group.md).
-*   **`BrowsingInstance`**: Groups `SiteInstance`s sharing a browsing context (e.g., related windows/tabs). Errors can lead to inconsistent isolation across contexts. See [browsing_instance.md](browsing_instance.md).
-*   **`NavigationRequest`**: Manages navigation lifecycle, determines `UrlInfo`, enforces policies. Logic errors here directly impact isolation decisions. See [navigation_request.md](navigation_request.md).
-*   **`RenderProcessHostImpl`**: Browser-side representation of a renderer process. Enforces process locks, manages lifecycle, handles communication. Errors in reuse logic (`MayReuseAndIsSuitable`) or locking (`SetProcessLock`) are critical. See [render_process_host.md](render_process_host.md).
-*   **`ChildProcessSecurityPolicyImpl`**: Manages security policies for child processes (permissions, URL access). Errors in granting/checking permissions (`CanRequestURL`, `CanRedirectToURL`) can lead to unauthorized access, especially for special schemes. See [child_process_security_policy_impl.md](child_process_security_policy_impl.md).
-*   **[IPC](ipc.md) / [Mojo](mojo.md)**: Inter-process communication. Flaws in message validation (origin checks, type confusion) are prime targets for compromised renderers.
+1.  **Global Site Isolation:** `--site-per-process` flag is enabled.
+2.  **COOP Request:** `SiteInfo::does_site_request_dedicated_process_for_coop_` flag is true (set based on COOP header + eligibility).
+3.  **Isolated Origin Policy:** The origin/site matches an entry configured via policy or command-line (`ChildProcessSecurityPolicyImpl::IsIsolatedOrigin`). See Section 3.2 below.
+4.  **Sandboxed Frame:** `SiteInfo::is_sandboxed_` flag is true.
+5.  **Error Page:** `SiteInfo::is_error_page()` returns true.
+6.  **PDF Content:** `SiteInfo::is_pdf_` flag is true.
+7.  **WebUI:** `SiteInfo::site_url_` scheme is a registered WebUI scheme.
+8.  **Embedder Policy:** `ContentBrowserClient::DoesSiteRequireDedicatedProcess` returns true.
+
+If none apply, returns `false`. See [site_info.md](site_info.md) for more details.
+
+### 3.2. Is an Origin Explicitly Isolated? (`ChildProcessSecurityPolicyImpl::IsIsolatedOrigin`)
+
+This checks if an `origin` should be isolated based on manually configured policies (enterprise policy or `--isolate-origins` command-line flag), potentially considering Origin-Agent-Cluster (OAC) status. It delegates to `GetMatchingProcessIsolatedOrigin`.
+
+**Logic (`GetMatchingProcessIsolatedOrigin`):**
+
+1.  **OAC Check:** If process isolation for OAC is enabled (`SiteIsolationPolicy::IsProcessIsolationForOriginAgentClusterEnabled()`):
+    *   Calls `DetermineOriginAgentClusterIsolation` to check if the `origin`, given its requested OAC state (`requests_origin_keyed_process`) and the `IsolationContext`, requires an origin-keyed process.
+    *   If yes: Returns `true` (origin is isolated).
+2.  **Policy/Cmd-Line Check:** If OAC doesn't mandate isolation:
+    *   Looks up isolated origin patterns matching the `origin`'s site URL in the `isolated_origins_` map.
+    *   Filters patterns based on applicability to the current profile (`MatchesProfile`) and BrowsingInstance timeline (`MatchesBrowsingInstance`).
+    *   Checks if the specific `origin` matches any applicable pattern (exact or subdomain via `IsolatedOriginUtil::DoesOriginMatchIsolatedOrigin`).
+    *   If a match is found: Returns `true` (origin is isolated).
+3.  **Default:** Returns `false`.
+
+### 3.3. Can Site Use Default Process? (`SiteInstanceImpl::CanBePlacedInDefaultSiteInstance`)
+
+Checks if a URL/SiteInfo can use the shared default `SiteInstance`.
+
+**Returns `false` (Cannot use default) if:**
+
+1.  URL scheme is `file:`.
+2.  URL does not assign a site (e.g., initial `about:blank`).
+3.  `SiteInfo::RequiresDedicatedProcess` returns `true` for the site (see Section 3.1).
+
+Otherwise, returns `true`. See [site_instance.md](site_instance.md) for more details.
+
+### 3.4. SiteInstance Selection
+
+Combines the above checks during navigation:
+*   `RenderFrameHostManager` decides if a `BrowsingInstance` swap is needed based on security/policy/heuristics (`ShouldSwapBrowsingInstancesForNavigation`).
+*   `RenderFrameHostManager` determines the required `SiteInstance` type (relation to current) based on the swap decision and context (`DetermineSiteInstanceForURL`).
+*   `RenderFrameHostManager` resolves the type into a concrete `SiteInstance`, potentially creating one (`ConvertToSiteInstance`).
+*   If creating/finding an SI *within* a `BrowsingInstance`, `BrowsingInstance::GetSiteInstanceForURL` uses `CanBePlacedInDefaultSiteInstance` to decide between using the default SI or a specific SI (found in map or newly created).
+
+See [navigation.md](navigation.md), [site_instance.md](site_instance.md), and [browsing_instance.md](browsing_instance.md) for the detailed flow.
+
+## 4. Potential Logic Flaws & VRP Relevance
+*   **Incorrect Site/Origin Classification:** Errors in `SiteInfo::Create` or helpers like `GetSiteForURLInternal` can lead to misclassifying a site, resulting in incorrect process placement.
+    *   **VRP 40059251:** Browser-side origin confusion for javascript/data URLs opened in a new window/tab by cross-origin iframe.
+*   **Isolation Bypass via Default SI:** Flaws in `SiteInfo::RequiresDedicatedProcess` or `SiteInstanceImpl::CanBePlacedInDefaultSiteInstance` allowing a site that *should* be isolated to share the default process.
+*   **Policy Bypass:** Incorrectly evaluating command-line flags (`--site-per-process`) or enterprise policies (`IsIsolatedOrigin`) leading to insufficient isolation.
+*   **OAC/COOP/Sandboxing Misconfiguration:** Bugs in how `UrlInfo` represents these states or how `SiteInfo` interprets them can break expected isolation boundaries.
+    *   **VRP 40056434:** crossOriginIsolated bypass (related to COOP/COEP enforcement).
+*   **Process Lock Errors:** Mistakes in `ShouldLockProcessToSite` or applying the lock in `LockProcessIfNeeded` could fail to properly restrict a process. Incorrect comparisons in `IsSuitableHost` / `ProcessLock::operator==`.
+*   **WebUI Privilege Escalation:** Incorrect process reuse allowing non-WebUI sites to gain WebUI privileges.
+    *   **VRP 40053875:** Some WebUI pages enable MojoJS bindings for the subsequently-navigated site.
+*   **State Confusion during Navigation/Redirects:** Complex navigations might lead to inconsistent state being used for isolation decisions at different stages.
+*   **Information Leaks Across BrowsingInstances:** Incorrect logic in `ShouldSwapBrowsingInstancesForNavigation` or proxy handling might leak information (like `window.length`).
+    *   **VRP 40059056:** Leaking window.length without opener reference.
+*   **Post-Crash State Issues:** Incorrect handling of state after a renderer crash leading to potential spoofs or bypasses.
+    *   **VRP 40057561:** URL Spoof after crash.
 
 ## 5. Areas Requiring Further Investigation
-*   Interaction between `UrlInfo::GetPossiblyOverriddenOriginFromUrl` and unique/opaque origins (`blob:`, `filesystem:`, `data:`).
-*   Process lock URL determination for WebUI.
-*   Robustness of `RenderProcessHostImpl::MayReuseAndIsSuitable` against all site/origin/policy combinations.
-*   Interaction between site isolation and other mechanisms (CSP, CORS, Sandboxing, Service Workers, Extensions, BFCache).
-*   `ChildProcessSecurityPolicyImpl` handling of special schemes and permissions.
-*   `SiteInstanceImpl` logic for process locking (`LockProcessIfNeeded`) and reuse (`ReuseExistingProcessIfPossible`, `IsSuitableForUrlInfo`).
-*   `SiteInstanceGroup` lifecycle management.
+*   Detailed analysis of `ChildProcessSecurityPolicyImpl::DetermineOriginAgentClusterIsolation`.
+*   Audit conditions checked by `ContentBrowserClient` callbacks (`DoesSiteRequireDedicatedProcess`, `ShouldLockProcessToSite`).
+*   Interaction between `IsIsolatedOrigin` (policy) and `requires_origin_keyed_process_` (OAC header) in `SiteInfo::RequiresDedicatedProcess`.
+*   Handling of edge case URL schemes (`file:`, `data:`, `blob:`, `javascript:`, `about:`) in all relevant functions, especially concerning initiator origins and new windows.
+*   State management and process selection logic during renderer crash recovery.
+*   Thorough review of `ShouldSwapBrowsingInstancesForNavigation` conditions, particularly proactive swaps and COOP/COEP interactions.
 
-## 6. Related VRP Reports (Illustrative)
-*   VRP: `40059251` (javascript/data origin confusion)
-*   VRP: `40053875` (WebUI MojoJS binding issue)
-*   VRP: `40059056` (`window.length` leak)
-*   VRP: `40057561` / VRP2.txt#9502 (URL Spoof after crash)
-*   VRP: 150 (Top-level navigation bypass via same-site redirect)
-*   VRP2.txt#542 (Cache double fetch timing)
-*   VRP2.txt#6261 (Filesystem access)
-*   VRP2.txt#173 (javascript/data origin confusion)
-*   VRP2.txt#370 (IPC message handling)
-*   VRP2.txt#11815 (Extension IPC spoofing)
-*   VRP2.txt#7849 (`allow-popups-to-escape-sandbox` bypass)
-*   VRP2.txt#6788 (Sandbox context reuse)
-*   VRP2.txt#8707 (Portal activation drag/drop bypass)
-*   VRP2.txt#7521 (Service Worker SameSite bypass)
-*   VRP2.txt#12036 (`registerProtocolHandler` bypass)
-*   VRP2.txt#6873 (Fetch object leak)
+## 6. Related VRP Reports (Examples)
+*   **40059251:** Browser-side origin confusion for javascript/data URLs.
+*   **40053875:** WebUI MojoJS bindings leak to subsequent sites.
+*   **40056434:** crossOriginIsolated bypass.
+*   **40059056:** window.length leak without opener.
+*   **40057561:** URL Spoof after crash.
 
-*(This list is illustrative; many VRPs touch on isolation principles. Refer to specific component pages and VRP files for more context.)*
-
-## 7. Secure Contexts and Site Isolation
-Site isolation is fundamental to maintaining secure context guarantees. By isolating sites, it prevents scripts from insecure contexts (e.g., HTTP) from interacting with secure contexts (e.g., HTTPS), mitigating mixed content issues and other attacks that rely on breaching origin boundaries.
-
-## 8. Privacy Implications
-Site isolation enhances privacy by preventing cross-site tracking through direct script interaction or shared process resources. However, care must be taken to ensure that the isolation mechanisms themselves don't introduce new privacy-leaking side channels (e.g., via process allocation timing, cache behavior - VRP2.txt#542). Storage partitioning, managed partly through `RenderProcessHostImpl`, is also crucial for privacy.
-
-*(See also: [ipc.md](ipc.md), [mojo.md](mojo.md), [navigation_request.md](navigation_request.md), [service_workers.md](service_workers.md), [worker_threads.md](worker_threads.md), [fenced_frames.md](fenced_frames.md), [portals.md](portals.md))*
+*(See also: [site_info.md](site_info.md), [url_info.md](url_info.md), [site_instance.md](site_instance.md), [browsing_instance.md](browsing_instance.md), [render_process_host.md](render_process_host.md), [navigation.md](navigation.md), [coop_coep.md](coop_coep.md), [process_lock.md](process_lock.md))*
