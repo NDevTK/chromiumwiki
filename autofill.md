@@ -6,12 +6,12 @@
 *   **Core Files:**
     *   `components/autofill/content/renderer/autofill_agent.cc`: Renderer-side logic, interacts with Blink forms, sends IPC to browser.
     *   `components/autofill/content/browser/content_autofill_driver.cc`: Browser-side driver per frame, receives IPC, "lifts" data, interacts with manager.
-    *   `components/autofill/core/browser/browser_autofill_manager.cc`: Core browser-side logic per frame, manages `FormStructure` cache, generates suggestions, triggers filling. **Note:** Renamed/refactored from `BrowserAutofillManager` to separate Address/CreditCard managers. Check current class names.
+    *   `components/autofill/core/browser/foundations/browser_autofill_manager.cc`: Core browser-side logic per frame, manages `FormStructure` cache, generates suggestions, triggers filling. **Note:** May delegate specific tasks (like payments, addresses) to helper classes, but remains the central manager.
     *   `components/autofill/core/browser/`: Common core logic (e.g., `form_structure.cc`, `field_types.h`, data models).
     *   `components/autofill/core/common/`: Shared types and constants.
     *   `chrome/browser/ui/autofill/autofill_popup_controller_impl.cc`: Manages the Autofill popup UI lifecycle and interactions.
     *   `chrome/browser/ui/autofill/autofill_external_delegate.*`: Interface between core logic and UI controllers.
-    *   `chrome/browser/ui/views/autofill/`: Desktop UI views (e.g., `popup/autofill_popup_view_views.cc` - check current name, `payments/virtual_card_enroll_bubble_views.cc`).
+    *   `chrome/browser/ui/views/autofill/`: Desktop UI views (e.g., `popup/autofill_popup_view_views.cc`, `payments/virtual_card_enroll_bubble_views.cc`). Check current names.
     *   `chrome/browser/autofill/android/` (`java/`): Android UI implementations (e.g., `AutofillPopupBridge`, keyboard accessory).
     *   `components/password_manager/core/browser/`: Password Autofill logic. ([password_manager.md](password_manager.md))
     *   `third_party/blink/public/web/web_autofill_client.h`: Blink interface implemented by `AutofillAgent`.
@@ -49,7 +49,7 @@ Autofill is a frequent target due to the sensitivity of the data it handles (add
 
 ## 3. Further Analysis and Potential Issues
 *   **Input Protection:** **Still the most critical area.** Investigate the current state of input protection (e.g., use of `InputEventActivationProtector`, minimum visibility duration checks like 500ms) on Autofill popups and prompts. Are they consistently applied across platforms (Desktop/Android)? Are they robust against all input methods (clicks, taps, keys, EyeDropper, etc.) and obscuring UI (PiP, FedCM, Permissions, Extensions)? (Related to VRP: `339481295`, VRP2.txt#7963, #825, #9878, etc.). **Regressions are common here (VRP: `40063230`).**
-*   **Geometric Visibility Checks:** Where are robust visibility checks performed *now*? Renderer (`AutofillAgent`)? Browser Manager (`BrowserAutofillManager` subclasses)? UI Delegate (`AutofillExternalDelegate`)? UI Controller (`AutofillPopupControllerImpl`)? UI View (`AutofillPopupViewViews`)? How effective are they against clipping, off-screen positioning, zero opacity, same-origin overlays? Can checks be bypassed by manipulating render timing?
+*   **Geometric Visibility Checks:** Where are robust visibility checks performed *now*? Renderer (`AutofillAgent`)? Browser Manager (`BrowserAutofillManager`)? UI Delegate (`AutofillExternalDelegate`)? UI Controller (`AutofillPopupControllerImpl`)? UI View (`AutofillPopupViewViews`)? How effective are they against clipping, off-screen positioning, zero opacity, same-origin overlays? Can checks be bypassed by manipulating render timing?
 *   **Occlusion Detection:** How does Autofill detect if its UI is obscured by *other browser UI* (PiP, FedCM, Permissions)? Is the detection robust and timely? Does it correctly hide or disable interaction when obscured? Are there race conditions?
 *   **iframe Origin/Focus Checks:** Re-examine cross-origin iframe scenarios. How is `FormStructure::host_frame()` token used? Are origin checks in `AutofillPopupControllerImpl::GetSuggestions` sufficient? How does focus tracking (`FocusedElementChanged`, `DidCompleteFocusChangeInFrame`) handle rapid changes or detached frames? Can IPC messages be spoofed by a compromised renderer? (Related to VRP: `1301164`, `1474196`).
 *   **Preview State Security:** Are there *any* remaining side channels (timing, resource usage, CSS properties not explicitly reset) that could leak information from preview text? Re-evaluate `::first-line` and `@font-face` interactions.
@@ -59,7 +59,7 @@ Autofill is a frequent target due to the sensitivity of the data it handles (add
 ## 4. Code Analysis
 *   `components/autofill/content/renderer/autofill_agent.cc`: Renderer logic. `ShowSuggestions` checks basic field state. **Historically lacked geometric visibility checks.** Sends `AskForValuesToFill` IPC.
 *   `components/autofill/content/browser/content_autofill_driver.cc`: Browser driver per RFH. `Lift` function adds frame tokens/origins.
-*   `components/autofill/core/browser/browser_autofill_manager.cc` (and subclasses like `AddressAutofillManager`, `CreditCardAutofillManager`): Core browser logic. `OnAskForValuesToFillImpl`. `BuildSuggestionsContext`. `GetAvailable...Suggestions`. Calls `external_delegate_->OnSuggestionsReturned`. **Historically didn't perform robust visibility checks.**
+*   `components/autofill/core/browser/foundations/browser_autofill_manager.cc`: Core browser logic. `OnAskForValuesToFillImpl`. `BuildSuggestionsContext`. `GetAvailable...Suggestions`. Calls `external_delegate_->OnSuggestionsReturned`. **Historically didn't perform robust visibility checks, relies heavily on UI layer.**
 *   `components/autofill/core/browser/ui/autofill_external_delegate.h`: Interface to UI. Stores `caret_bounds`. `OnSuggestionsReturned`.
 *   `chrome/browser/ui/autofill/autofill_popup_controller_impl.cc`: Manages popup UI state. Filters suggestions based on origin (`GetMatchingFrontendIDs`). Hides popup on certain events (`HidePopupWithoutAnimating`). **Crucial for origin checks and UI lifecycle management.**
 *   `chrome/browser/ui/views/autofill/popup/autofill_popup_view_views.cc` (or similar): Desktop UI view. **Key location to check for `InputEventActivationProtector` usage and visibility/occlusion handling.**

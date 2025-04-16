@@ -11,7 +11,7 @@
 
 The `chrome.debugger` API presents a significant attack surface due to its high privilege level. Flaws can lead to sandbox escapes, policy bypasses, cross-origin data theft, and local file access. Key areas of concern identified through code review and VRP data include:
 
-*   **Insufficient Permission/Policy Enforcement During Command Execution:** The core `debugger.sendCommand` function (`DebuggerSendCommandFunction::Run`) **does not re-verify permissions** based on the specific command or parameters being sent. It relies entirely on the prior attachment being valid and the ***backend CDP handler*** for the target (e.g., in the renderer process, browser process, or service worker) to enforce necessary security checks (host permissions, file access, policy blocking, specific API access rights, etc.) for the *specific command being executed*. Many historical vulnerabilities stemmed from backend handlers failing to perform these checks.
+*   **Insufficient Permission/Policy Enforcement During Command Execution:** The core `debugger.sendCommand` function (`DebuggerSendCommandFunction::Run` in `debugger_api.cc`) **does not re-verify permissions** based on the specific command or parameters being sent. It relies entirely on the prior attachment being valid and the ***backend CDP handler*** for the target (e.g., in the renderer process, browser process, or service worker) to enforce necessary security checks (host permissions, file access, policy blocking, specific API access rights, etc.) for the *specific command being executed*. Many historical vulnerabilities stemmed from backend handlers failing to perform these checks.
     *   **VRP Pattern (Policy Bypass - `runtime_blocked_hosts`):** Backend handler for `Network.getAllCookies` didn't check `runtime_blocked_hosts`. (VRP: `40060283`; VRP2.txt#8615, #16467, #13706 - Reading blocked host cookies).
     *   **VRP Pattern (File Access Bypass):** Backend handlers for specific CDP methods didn't check the extension's file access permission or allowed access to sensitive schemes (`file:`) inappropriately.
         *   `Page.navigate` to `file:` (VRP: `40060173`; VRP2.txt#7661).
@@ -41,15 +41,15 @@ The `chrome.debugger` API presents a significant attack surface due to its high 
 *   **Protocol Method Interactions:** Can sequences of CDP commands bypass checks that individual commands would trigger? E.g., setting up state with one command and exploiting it with another.
 *   **Protocol Version Enforcement:** Is v1.3 strictly enforced for `sendCommand`? How are newer protocol methods vetted for security implications when exposed via this API?
 
-## 4. Code Analysis
+## 4. Code Analysis (`chrome/browser/extensions/api/debugger/debugger_api.cc`)
 
-*   `DebuggerFunction::InitAgentHost`: Finds the `DevToolsAgentHost` for the target (using `tabId`, `extensionId`, or `targetId` via `DevToolsAgentHost::GetForId` or iterating `DevToolsAgentHost::GetOrCreateAll`). Calls permission checks.
+*   `DebuggerFunction::InitAgentHost`: Finds the `DevToolsAgentHost` for the target (using `tabId`, `extensionId`, or `targetId` via `DevToolsAgentHost::GetForId` or iterating `DevToolsAgentHost::GetOrCreateAll`). Calls permission checks (`ExtensionMayAttachTo...`).
 *   `ExtensionMayAttachToAgentHost` / `ExtensionMayAttachToWebContents` / `ExtensionMayAttachToURL`: Perform initial attach checks (profile matching, host permissions via `PermissionsData::IsRestrictedUrl`/`IsPolicyBlockedHost`, file access via `util::AllowFileAccess`, WebUI/interstitial/DevTools/Extension URL checks). **Crucially relies on potentially stale URLs like `GetLastCommittedURL` and `GetSiteInstance()->GetSiteURL()` during navigation.**
 *   `DebuggerGetTargetsFunction`: Filters available targets based on `ExtensionMayAttachToAgentHost`.
 *   `DebuggerAttachFunction`: Validates permission for a specific target via `InitAgentHost`. Creates `ExtensionDevToolsClientHost` and calls `Attach()`.
 *   `ExtensionDevToolsClientHost::Attach()`: Calls `agent_host_->AttachClient(this)` and potentially shows the infobar.
-*   `DebuggerSendCommandFunction`: Finds the existing `ExtensionDevToolsClientHost` (verifying prior attachment) and calls `ExtensionDevToolsClientHost::SendMessageToBackend`.
-*   `ExtensionDevToolsClientHost::SendMessageToBackend`: **Formats the raw CDP command (method + params) and sends it via `agent_host_->DispatchProtocolMessage` without further validation or permission checks.** Relies entirely on the backend handler (in the target's process or the browser process) for the specific CDP method.
+*   `DebuggerSendCommandFunction`: Finds the existing `ExtensionDevToolsClientHost` (via `InitClientHost`, verifying prior attachment based on `extension_id` and `agent_host_`) and calls `ExtensionDevToolsClientHost::SendMessageToBackend` (**see line ~890**). **No command-specific permission checks here.**
+*   `ExtensionDevToolsClientHost::SendMessageToBackend`: **Formats the raw CDP command (method + params) and sends it via `agent_host_->DispatchProtocolMessage` (see line ~558) without further validation or permission checks.** Relies entirely on the backend handler (in the target's process or the browser process) for the specific CDP method.
 *   `ExtensionDevToolsClientHost`: Implements `DevToolsAgentHostClient`, including permission callbacks (`MayAttachToURL`, `MayReadLocalFiles`, etc.) used by the agent host itself (e.g., for security checks within the DevTools UI), but these are *not* re-checked per `sendCommand` call from the extension.
 *   `DebuggerEventRouter`: Routes events back to the extension.
 *   `DebuggerAPI::DetachClientHost`: Handles detachment.
