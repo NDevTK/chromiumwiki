@@ -36,15 +36,27 @@ This page documents potential security vulnerabilities related to inter-process 
 
 ## Areas Requiring Further Investigation:
 
-* Review all Mojo interface implementations in privileged processes (browser, network, GPU) that are exposed to less privileged processes (renderer, utility). Pay special attention to interfaces handling input, file access, permissions, device access, navigation, and rendering commands, checking validation of *all* parameters.
-* Audit legacy IPC handlers (`OnMessageReceived` in `RenderProcessHostImpl`, `RenderFrameHostImpl`, etc.) for similar validation issues.
-* Analyze the security of Interface Brokers and how interfaces are obtained across process boundaries.
-* Review `ParamTraits` implementations for legacy IPC for memory safety.
-* Fuzz Mojo interfaces exposed to renderers.
+*   **Mojo Interface Validation (Privileged Processes):**
+    *   Systematically review implementations in the browser process (and other privileged processes like Network, GPU) of Mojo interfaces exposed to less privileged processes (renderer, utility).
+    *   **Focus on Origin/Permission Checks:** Pay special attention to interfaces handling features implicated in VRPs (Push Messaging VRP `1275626` - check handlers in `content/browser/push_messaging/`; Content Index VRP `1263530`/`1263528` - check handlers in `content/browser/content_index/`; Extensions VRP2.txt#11815 - check extension API handlers). Verify handlers robustly check the sender's origin (`RenderFrameHost::GetLastCommittedOrigin`) and permissions (`ChildProcessSecurityPolicy`) before acting.
+    *   **Focus on Metadata Validation:** Audit handlers receiving complex data structures or parameters beyond simple URLs/origins. Ensure *metadata* (e.g., screen coordinates, flags, operation masks in `RenderWidgetHostImpl::OnStartDragging` - VRP2.txt#4) is validated or treated as untrusted before use in privileged operations or platform APIs.
+    *   **Look for `ReportBadMessage` calls** as indicators of existing security checks; ensure checks are comprehensive.
+*   **Race Conditions & State Management (UAF):**
+    *   Audit component lifecycles interacting heavily with asynchronous IPCs.
+    *   Specifically review `PermissionRequestManager` (`components/permissions/`) state management related to request cancellation/finalization IPCs (VRP `1424437`). Are there race conditions between IPC arrival and internal state changes/object destruction?
+    *   Review Side Panel (`chrome/browser/ui/views/side_panel/` or related components) IPC handlers and state management for potential UAFs during asynchronous operations (VRP `40061678`).
+*   **Memory Safety (Legacy IPC & Mojo):**
+    *   Audit legacy IPC handlers (`OnMessageReceived` in `RenderProcessHostImpl`, `RenderFrameHostImpl`, etc.) for validation and memory safety issues.
+    *   Review `ParamTraits` implementations for legacy IPC serialization (`Write`, `Read`) for memory safety bugs (overflows, etc.).
+    *   Audit Mojo struct deserialization (`StructTraits::Read`) and C++ code processing complex IPC data structures for type confusion (VRP `1337607`), buffer overflows, integer overflows etc.
+*   **Process Launching & OS Interaction (EoP):**
+    *   Review browser process interactions with platform-specific process launching mechanisms, especially external COM interfaces on Windows (`GoogleUpdate.ProcessLauncher`). Ensure proper validation, sandboxing, and impersonation levels are used (VRP2.txt#3763). Audit `BrowserChildProcessHostImpl::Launch`.
+*   **Interface Broker Security:** Analyze the security of Interface Brokers (`BrowserInterfaceBroker`, `RenderFrameHost::GetAssociatedInterface`) and how interfaces are obtained/exposed across process boundaries. Can a renderer obtain an interface it shouldn't have access to?
+*   **Fuzzing:** Fuzz Mojo interfaces exposed to renderers, focusing on complex data structures and edge case inputs.
 
 ## Files Reviewed:
-* `content/browser/browser_child_process_host_impl.cc` (Previously focused, but IPC is broader)
-* `content/browser/renderer_host/render_widget_host_impl.cc` (Handles `StartDragging` IPC)
+* `content/browser/browser_child_process_host_impl.cc`
+* `content/browser/renderer_host/render_widget_host_impl.cc`
 
 ## Key Functions/Concepts Reviewed:
 * `OnMessageReceived`, `ReportBadMessage`, `OnMojoError`
