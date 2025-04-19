@@ -2,14 +2,14 @@
 
 This wiki contains analysis of Chromium components and potential security vulnerabilities.
 
-**Important Notes:**
+**Important Notes & Guiding Principles:**
 
-*   **Dynamic Prioritization:** The order of wiki pages should initially reflect a combination of perceived bug likelihood and potential VRP reward (highest potential value first). **However, this order is dynamic and should be adjusted based on new information.** For instance:
-    *   If a codebase search reveals specific patterns or potentially vulnerable functions related to a topic, its priority might increase.
-    *   If significant time is spent investigating an area with little progress, its priority might decrease. Conversely, making good progress can increase priority.
-    *   As new vulnerability types or attack vectors are discovered (internally or externally), related areas should be reprioritized.
-*   **Continuous Updates:** Research findings, analysis, potential issues, and relevant VRP examples should be added *directly* to the relevant wiki page following the format below. **Do not create separate files for research notes.** As new ideas, findings, or VRP data emerge, **ensure the corresponding wiki pages are updated promptly** to reflect the latest understanding.
-*   **Detail is Key:** Please keep the security research tips below very detailed, drawing on examples from the VRP data; do not shorten them.
+*   **Dynamic Prioritization:** Research focus and wiki page order are dynamic. While initial prioritization considers bug likelihood and VRP reward, **continuously adjust based on new findings, research progress, emerging vulnerability types, and user guidance.**
+    *   Codebase analysis revealing promising patterns increases priority.
+    *   Lack of progress in an area may decrease priority, while significant findings increase it.
+    *   New vulnerability intelligence should lead to reprioritization of related areas.
+*   **Continuous Updates:** Integrate all research findings, analysis, potential issues, and relevant VRP examples *directly* into the relevant wiki page following the defined format. **Avoid separate notes files.** Promptly update wiki pages to reflect the latest understanding as new ideas, findings, or VRP data from `VRP.txt` and `VRP2.txt` emerge.
+*   **Detail is Key:** The "General Security Research Tips" section must remain highly detailed, drawing heavily on examples from the VRP data to provide actionable guidance.
 
 **Format of Each Wiki Page:**
 
@@ -108,7 +108,7 @@ This section provides actionable tips for security research in Chromium, informe
     *   **Origin Spoofing/Confusion:** Dialogs (Device Choosers VRP: `40061374`, VRP2.txt#8904; FedCM VRP2.txt#13066; Document PiP VRP: `40063068`, VRP2.txt#10137; FencedFrames+PiP VRP: `40062954`, VRP2.txt#7262; Portals VRP: `40064170`; External Protocol VRP: `40055515`). Special schemes (`javascript:` VRP2.txt#173; `blob:` VRP2.txt#1761). `javascript:`/`data:` URL confusion (VRP: `40059251`).
     *   **Policy Bypass (CSP, SameSite, Sandbox, Mixed Content, CORS):**
         *   *SameSite:* Web Share (VRP2.txt#11901), BackgroundFetch (VRP: `1244289`), Redirects (VRP2.txt#9752), SW FetchEvent (VRP: `1115438`), Android Intents (VRP: `1375132`), Prerender (VRP2.txt#14702). Cookie Parsing (VRP2.txt#13543). Drag/Drop `DownloadURL` (VRP: `40060358`). See [privacy.md](privacy.md).
-        *   *CSP:* Service Worker (VRP: `598077`), `about:blank` (VRP2.txt#1924), `blob:` (VRP2.txt#7831), `filesystem:` (VRP2.txt#5009), `javascript:`/`srcdoc` (VRP2.txt#11413), Directive Handling (VRP: `1288035`, VRP2.txt#11841). See [content_security_policy.md](content_security_policy.md).
+        *   *CSP:* Service Worker (VRP: `598077`), `about:blank` (VRP2.txt#1924), `blob:` (VRP2.txt#7831), `filesystem:` (VRP2.txt#5009), `javascript:`+`srcdoc` (VRP2.txt#11413), Directive Handling (VRP: `1288035`, VRP2.txt#11841). See [content_security_policy.md](content_security_policy.md).
         *   *IFrame Sandbox:* `allow-popups-to-escape-sandbox` (VRP: `40069622`, `40057525`), `allow-downloads` (VRP: `40060695`), `intent://` (VRP: `1365100`), `javascript:`+`opener` (VRP: `1017879`), Top Nav Header (VRP2.txt#4247). Cross-origin iframe navigation bypass (VRP: `40053936`). See [iframe_sandbox.md](iframe_sandbox.md).
         *   *Mixed Content:* PWA/SW (VRP2.txt#8497). `javascript:` popup (VRP2.txt#9702).
         *   *CORS:* WebSockets (VRP2.txt#1467), CORB leak (VRP2.txt#13544), BackgroundFetch wildcard (VRP2.txt#9370), SW Origin header (VRP2.txt#11875).

@@ -14,7 +14,7 @@
 
 ## 2. Potential Logic Flaws & VRP Relevance
 *   **UI Interaction Bypasses:** Vulnerabilities related to bypassing user interaction requirements for confirming payments.
-    *   **VRP Pattern (Keyjacking - Historical):** PaymentRequest dialog `show()` previously allowed confirmation with a single Enter keypress due to default button focus (VRP: `1403539`, VRP2.txt#4303). This was likely mitigated by adding input protection.
+    *   **VRP Pattern (Keyjacking - Historical):** PaymentRequest dialog `show()` previously allowed confirmation with a single Enter keypress due to default button focus (VRP: `1403539`, VRP2.txt#4303). This was likely mitigated by adding input protection using `InputEventActivationProtector` in `PaymentSheetViewController`. The `PossiblyIgnorePrimaryButtonPress` method in `payment_sheet_view_controller.cc` demonstrates this mitigation.
     *   **VRP Pattern (State/Interaction Bypass):** General bypasses of `show()` calls after the first one suggest potential flaws in state management or interaction logic beyond simple initial click protection (VRP: `40072274`). See [input.md](input.md).
 *   **XSS via Manifests/Service Workers:** Malicious payment app manifests or associated service workers leading to cross-site scripting.
     *   **VRP Pattern (Manifest/SW XSS):** Persistent XSS possible via user-uploaded PaymentRequest manifest (potentially fetched insecurely due to VRP2.txt#276 - lack of Link header requirement) combined with a service worker. See [service_workers.md](service_workers.md).
@@ -35,7 +35,7 @@
 
 ## 4. Code Analysis
 *   `PaymentRequestImpl` (`components/payments/content/`): Core browser implementation. Handles `show()`, `abort()`. Manages state (`state_`).
-*   `PaymentRequestSheetController` (`chrome/browser/ui/views/payments/`): Manages the payment sheet UI view. **Uses `InputEventActivationProtector` (see constructor).** Check event handling (`ButtonPressed`), button states, focus management, and interaction with `PaymentRequestState`. (Related VRP: `1403539`, `40072274`).
+*   `PaymentSheetViewController` (`chrome/browser/ui/views/payments/`): Manages the payment sheet UI view. The constructor initializes an `InputEventActivationProtector`. The `PossiblyIgnorePrimaryButtonPress` method uses this protector to prevent unintended clicks on the primary button. Check event handling (`ButtonPressed`), button states, focus management, and interaction with `PaymentRequestState`. (Related VRP: `1403539`, `40072274`).
 *   `PaymentManifestDownloader` (`components/payments/content/`): Fetches payment method manifests. Check URL handling, redirect handling, and response processing (VRP2.txt#276).
 *   `PaymentManifestParser` (`components/payments/content/`): Parses manifest content. Check for parsing vulnerabilities.
 *   `InstallablePaymentAppCrawler` (`components/payments/content/`): Crawls for installable payment apps. Check `FindAppServiceWorkerAndManifest` for validation logic.
