@@ -13,26 +13,26 @@
     *   `content/public/browser/web_contents.h`, `content/browser/web_contents/web_contents_impl.cc`: Defines `GenerateMHTML`.
 
 ## 2. Potential Logic Flaws & VRP Relevance
-*   **Privilege Escalation via CDP:** Extensions with `debugger` permission using `chrome.debugger.sendCommand` to invoke powerful or insufficiently validated CDP methods to escape the sandbox, access privileged browser internals, or bypass security policies.
-    *   **VRP Pattern (CDP Method Abuse):** Exploiting methods like `Page.navigate`, `Input.*`, `DOM.setFileInputFiles`, `Page.setDownloadBehavior`, etc., via `chrome.debugger`. (Numerous VRPs, see [extensions_debugger_api.md](extensions_debugger_api.md)).
-    *   **VRP Pattern (File Read via Snapshot):** `Page.captureSnapshot` leads to local file reads. The browser-side flow (`PageHandler` -> `DevToolsMHTMLHelper` -> `WebContentsImpl::GenerateMHTML` -> `MHTMLGenerationManager`) orchestrates creating a temporary file and acquiring Mojo interfaces (`mojom::MhtmlFileWriter`) for each frame's renderer. **Crucially, a writable file handle is passed via Mojo to each renderer process**, which is then responsible for serializing its content. Historically, the renderer-side serialization logic failed to re-verify permissions for `file://` URLs when triggered via DevTools, allowing sensitive content to be written to the MHTML file accessible by the extension. (VRP2.txt#1116444, #1116445, #3520, #6009, #7621).
-    *   **VRP Pattern (Target Manipulation):** Attaching the debugger to disallowed targets (other extensions, privileged pages) via `Target.attachToTarget` or `Target.setAutoAttach`. (VRP2.txt#16364, #331).
+*   **Privilege Escalation via CDP:** Extensions with `debugger` permission using `chrome.debugger.sendCommand` to invoke powerful or insufficiently validated CDP methods to escape the sandbox, access privileged browser internals, or bypass security policies. (See README Tip #2 - Extension & DevTools Security)
+    *   **VRP Pattern (CDP Method Abuse):** Exploiting methods like `Page.navigate`, `Input.*`, `DOM.setFileInputFiles`, `Page.setDownloadBehavior`, etc., via `chrome.debugger`. (Numerous VRPs, see [extensions_debugger_api.md](extensions_debugger_api.md)). (See README Tip #2 - `chrome.debugger` API Abuse)
+    *   **VRP Pattern (File Read via Snapshot):** `Page.captureSnapshot` leads to local file reads. The browser-side flow (`PageHandler` -> `DevToolsMHTMLHelper` -> `WebContentsImpl::GenerateMHTML` -> `MHTMLGenerationManager`) orchestrates creating a temporary file and acquiring Mojo interfaces (`mojom::MhtmlFileWriter`) for each frame's renderer. **Crucially, a writable file handle is passed via Mojo to each renderer process**, which is then responsible for serializing its content. Historically, the renderer-side serialization logic failed to re-verify permissions for `file://` URLs when triggered via DevTools, allowing sensitive content to be written to the MHTML file accessible by the extension. (VRP2.txt#1116444, #1116445, #3520, #6009, #7621). (See README Tip #2 - File Read, Tip #6, Tip #10)
+    *   **VRP Pattern (Target Manipulation):** Attaching the debugger to disallowed targets (other extensions, privileged pages) via `Target.attachToTarget` or `Target.setAutoAttach`. (VRP2.txt#16364, #331). (See README Tip #2 - Target Manipulation)
 *   **XSS / Code Injection in DevTools Frontend:** Vulnerabilities within the DevTools frontend UI code (`front_end/`) allowing script execution with DevTools privileges.
-*   **Insufficient Validation in CDP Handlers:** Backend CDP handlers (browser or renderer side) failing to properly validate parameters received from the frontend (or via `chrome.debugger`).
+*   **Insufficient Validation in CDP Handlers:** Backend CDP handlers (browser or renderer side) failing to properly validate parameters received from the frontend (or via `chrome.debugger`). (See README Tip #4 - IPC/Mojo Security)
     *   **VRP Pattern (Parameter Sanitization):** Lack of sanitization for parameters used in DevTools UI or backend handlers (VRP2.txt#12830, #12809).
 *   **Information Leaks:** DevTools exposing sensitive information from the target page or the browser.
 *   **Timing/Race Conditions:** Races during DevTools attachment, detachment, navigation, or inspection.
-    *   **VRP Pattern (Navigation/Attach Races):** Exploiting timing during navigation or crashes to attach DevTools to privileged targets (WebUI, other DevTools instances) (VRP: `41483638`; VRP2.txt#67, #1446, #5705, #1487). Bypassing security interstitials (VRP2.txt#12764).
+    *   **VRP Pattern (Navigation/Attach Races):** Exploiting timing during navigation or crashes to attach DevTools to privileged targets (WebUI, other DevTools instances) (VRP: `41483638`; VRP2.txt#67, #1446, #5705, #1487). Bypassing security interstitials (VRP2.txt#12764). (See README Tip #2 - Timing Races)
 *   **Interaction with other features:** Security issues arising from DevTools interacting with extensions (`devtools_page`), WebUI, Fenced Frames, Portals, etc.
-    *   **VRP Pattern (devtools_page):** Exploiting the `devtools_page` manifest entry (VRP2.txt#5090, #647, #11249).
-    *   **VRP Pattern (Privileged Page Interaction):** Using `chrome.devtools.inspectedWindow.eval/reload` to execute script in privileged contexts (VRP: `1473995`, VRP2.txt#12742, #4594).
+    *   **VRP Pattern (devtools_page):** Exploiting the `devtools_page` manifest entry (VRP2.txt#5090, #647, #11249). (See README Tip #2 - Privileged Page Interaction)
+    *   **VRP Pattern (Privileged Page Interaction):** Using `chrome.devtools.inspectedWindow.eval/reload` to execute script in privileged contexts (VRP: `1473995`, VRP2.txt#12742, #4594). (See README Tip #2 - Privileged Page Interaction)
 
 ## 3. Further Analysis and Potential Issues
-*   **CDP Handler Security:** Audit CDP handlers in browser/renderer. Focus on file system access, navigation, input simulation, sensitive data, target management. **Verify handlers don't delegate security-critical checks (like file access) to downstream implementations (e.g., renderer process via Mojo) without ensuring those implementations perform the checks.**
-*   **MHTML Generation (Renderer-Side):** Analyze the renderer-side implementation of `mojom::MhtmlFileWriter::SerializeAsMHTML` and the resource fetching it triggers. Does it correctly apply origin/scheme checks (especially for `file://`) when initiated by DevTools?
+*   **CDP Handler Security:** Audit CDP handlers in browser/renderer. Focus on file system access, navigation, input simulation, sensitive data, target management. **Verify handlers don't delegate security-critical checks (like file access) to downstream implementations (e.g., renderer process via Mojo) without ensuring those implementations perform the checks.** (See README Tip #4)
+*   **MHTML Generation (Renderer-Side):** Analyze the renderer-side implementation of `mojom::MhtmlFileWriter::SerializeAsMHTML` and the resource fetching it triggers. Does it correctly apply origin/scheme checks (especially for `file://`) when initiated by DevTools? (See README Tip #6, Tip #10)
 *   **DevTools Frontend Security:** Review `front_end/` for XSS, insecure data handling.
-*   **Attachment Logic (`DevToolsAgentHost`):** Analyze attach logic for robustness against timing attacks/races. (VRP: `41483638`).
-*   **Privilege Boundaries:** Ensure DevTools cannot escalate privileges or bypass sandbox/extension permissions.
+*   **Attachment Logic (`DevToolsAgentHost`):** Analyze attach logic for robustness against timing attacks/races. (VRP: `41483638`). (See README Tip #2)
+*   **Privilege Boundaries:** Ensure DevTools cannot escalate privileges or bypass sandbox/extension permissions. (See README Tip #2, Tip #4)
 
 ## 4. Code Analysis
 *   `DevToolsAgentHostImpl`: Represents the backend target.
@@ -48,11 +48,11 @@
 *   `ExtensionDevToolsClient`: Handles `chrome.debugger` API calls.
 
 ## 5. Areas Requiring Further Investigation
-*   **CDP Handler Fuzzing/Review:** Fuzz/review browser-process CDP handlers exposed via `chrome.debugger`. Ensure security checks aren't incorrectly delegated to renderer.
-*   **Renderer-Side MHTML Serialization Audit:** Review the renderer-side MHTML generation code for file access and origin checks.
+*   **CDP Handler Fuzzing/Review:** Fuzz/review browser-process CDP handlers exposed via `chrome.debugger`. Ensure security checks aren't incorrectly delegated to renderer. (See README Tip #4)
+*   **Renderer-Side MHTML Serialization Audit:** Review the renderer-side MHTML generation code for file access and origin checks. (See README Tip #6, Tip #10)
 *   **DevTools Frontend XSS:** Audit the frontend code.
-*   **Target Attachment Logic:** Test attachment scenarios for races/bypasses.
-*   **`devtools_page` Security:** Review permissions/capabilities of `devtools_page`.
+*   **Target Attachment Logic:** Test attachment scenarios for races/bypasses. (See README Tip #2)
+*   **`devtools_page` Security:** Review permissions/capabilities of `devtools_page`. (See README Tip #2)
 
 ## 6. Related VRP Reports
 *   See [extensions_debugger_api.md](extensions_debugger_api.md) for numerous CDP abuse examples.
@@ -63,4 +63,7 @@
 *   **`devtools_page` Exploits:** VRP2.txt#5090, #647, #11249
 *   **Download Check Bypass:** VRP2.txt#16391 (`Page.downloadBehavior`)
 
-*(See also [extension_security.md](extension_security.md), [extensions_debugger_api.md](extensions_debugger_api.md), [ipc.md](ipc.md))*
+## 7. Cross-References
+*   [extension_security.md](extension_security.md)
+*   [extensions_debugger_api.md](extensions_debugger_api.md)
+*   [ipc.md](ipc.md)

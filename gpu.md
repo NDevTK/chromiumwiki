@@ -4,7 +4,7 @@
 *   **Functionality:** Manages interaction with the system's GPU hardware for accelerated rendering (Compositing via `viz`, WebGL, WebGPU, Canvas2D, video decoding/encoding). Runs in a separate, sandboxed process (`GpuProcessHost`, `GpuProcessHostUIShim`) for security and stability. Communicates with the Browser process and Renderer processes via IPC (primarily Mojo Command Buffers and specific interfaces).
 *   **Key Logic:** GPU process launching and sandboxing (`GpuProcessHost`, `GpuSandboxedProcessLauncherDelegate`), establishing communication channels, managing GPU contexts (OpenGL ES/WebGL via ANGLE, Vulkan, Metal, Dawn for WebGPU), processing rendering commands (`CommandBufferStub`, `GLES2Implementation`), handling graphics memory (`GpuMemoryBuffer`), interacting with graphics drivers, managing GPU crashes (`OnProcessCrashed`), hardware video acceleration.
 *   **Core Files:**
-    *   `content/browser/gpu/gpu_process_host.*`: Manages the GPU process lifetime, launch, and communication channels from the browser side.
+    *   `content/browser/gpu/gpu_process_host.*`: Manages the GPU process lifetime, launch, and communication channels from the browser side. See [gpu_process.md](gpu_process.md) for process details.
     *   `content/common/gpu/`: Shared GPU-related code and Mojo interfaces.
     *   `gpu/`: Core GPU abstraction layer.
         *   `gpu/command_buffer/client/`: Client-side command buffer logic (runs in Renderer).
@@ -63,6 +63,7 @@ Vulnerabilities in the GPU process or stack can lead to sandbox escapes (often v
 *   *(Note: Direct GPU process sandbox escapes often involve driver CVEs rather than specific Chromium VRPs, but Chromium aims to mitigate these via sandboxing and command buffer validation).*
 
 ## 7. Cross-References
+*   [gpu_process.md](gpu_process.md)
 *   [site_isolation.md](site_isolation.md) (GPU process is part of the isolation model)
 *   [ipc.md](ipc.md) / [mojo.md](mojo.md) (Communication mechanism)
 *   [webgl.md](webgl.md) (Specific API - if exists)

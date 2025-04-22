@@ -41,7 +41,7 @@ This section provides actionable tips for security research in Chromium, informe
         *   *FedCM:* FedCM bubbles obscuring Autofill (VRP: `339481295`, `340893685` - opaque origin, VRP2.txt#7963).
         *   *Extensions:* Extension popups obscuring Permissions/Screen Share (VRP: `40058873`, VRP2.txt#7974), Payment Requests (VRP2.txt#7574). Inactive extension windows over active content (VRP: `40058935`, VRP2.txt#9002, #13551, #12352, #9068).
         *   *System UI/Other:* Share dialogs (VRP: `40056848`). System notifications over fullscreen toast (VRP2.txt#11735, #10006, #10086, #12584). Android Keyboard/Text Select over fullscreen toast (VRP2.txt#1873, #13813). `<select>` dropdown over toast/other tabs (VRP2.txt#10560, #7944). Custom CSS cursors over prompts (VRP2.txt#15458). PWA Install overlays (VRP2.txt#6886).
-        *   See [fedcm.md](fedcm.md), [picture_in_picture.md](picture_in_picture.md), [permissions.md](permissions.md), [autofill.md](autofill.md), [extensions_api.md](extensions_api.md), [input.md](input.md).
+        *   See [fedcm.md](fedcm.md), [picture_in_picture.md](picture_in_picture.md), [permissions.md](permissions.md), [autofill.md](autofill.md), [extension_security.md](extension_security.md), [input.md](input.md).
     *   **Dialog/Prompt Spoofing (Origin/Content):**
         *   *Install Prompts:* PWA install origin display/overlay/hiding issues (VRP2.txt#6886, #13834, #7452, #7537). Android app install intent spoof (VRP: `41493134`).
         *   *External Protocols:* Wrong origin via redirects/timing (VRP: `40055515`; VRP2.txt#9087, #13592, #11016, #13605). Overlapping other origins (VRP2.txt#13555, #13605, #15881). See [protocol_handler.md](protocol_handler.md).
@@ -66,7 +66,7 @@ This section provides actionable tips for security research in Chromium, informe
 
 **2. Extension & DevTools Security (High Likelihood, High VRP Value):**
 
-*   **Focus:** Analyze extension API boundaries, permissions (`<all_urls>`, `debugger`, `downloads`), content script isolation, manifest CSP, interactions with privileged pages (`chrome://`, `devtools://`). Look for sandbox escapes, policy bypasses, unauthorized API use, permission escalation. See [extension_security.md](extension_security.md), [extensions_api.md](extensions_api.md), [extensions_debugger_api.md](extensions_debugger_api.md), [devtools.md](devtools.md).
+*   **Focus:** Analyze extension API boundaries, permissions (`<all_urls>`, `debugger`, `downloads`), content script isolation, manifest CSP, interactions with privileged pages (`chrome://`, `devtools://`). Look for sandbox escapes, policy bypasses, unauthorized API use, permission escalation. See [extension_security.md](extension_security.md), [extensions_debugger_api.md](extensions_debugger_api.md), [devtools.md](devtools.md).
 *   **Techniques & VRP Patterns:**
     *   **`chrome.debugger` API Abuse:** Major source of high-severity bugs due to potential to bypass checks in backend CDP handlers.
         *   *CDP Method Exploits:* `Page.navigate` (`file:` VRP: `40060173`, VRP2.txt#7661), `Page.captureSnapshot`/`captureScreenshot` (file read VRP2.txt#1116444, #3520), `Input.synthesizeTapGesture` (VRP2.txt#1178), `Input.dispatchKeyEvent` (VRP2.txt#351), `DOM.setFileInputFiles` (file read VRP2.txt#15188), `Page.downloadBehavior` (download bypass VRP2.txt#16391).
@@ -162,10 +162,51 @@ This section provides actionable tips for security research in Chromium, informe
 *   **Focus:** Scrutinize `RenderFrameHostImpl::ValidateDidCommitParams`. Look for timing/state inconsistencies (opener vs popup ProcessLock), commit parameter mismatches, policy enforcement timing issues. See [navigation.md](navigation.md), [site_instance.md](site_instance.md), [process_lock.md](process_lock.md).
 *   **Techniques & VRP Patterns:** Transient state confusion allowing checks based on opener's context (VRP: `40059251` - origin confusion for `javascript:`/`data:` URLs opened by cross-origin iframe). Edge cases in parameter validation (schemes, sandbox). Policy enforcement timing.
 
-**Wiki Pages (Prioritized List - *Adjust Dynamically Based on Research*):**
+**Wiki Pages (Grouped by Research Tip & Prioritized - *Adjust Dynamically Based on Research*):**
 
-*   **High VRP / High Frequency:** Site Isolation, Installer, WebView, Payments, Omnibox, Extensions, WebApps, Autofill, PiP, Permissions.
-*   **Medium VRP / Medium Frequency:** iframe Sandbox, FedCM, Extensions API, Intents, PointerLock, WebSerial, Privacy, WebUSB, COOP, Web Bluetooth, Input, Navigation, Portals, SafeBrowsing, ServiceWorkers, DevTools.
-*   **Lower VRP / Lower Frequency / Emerging Tech:** Drag/Drop, URL Formatting, SidePanel, WebShare, PDF Plugin, PerformanceAPIs, Infra/LUCI, WebCodecs, WebGPU, WebXR, BackgroundFetch, PushMessaging, FencedFrames, Mojo, SharedWorkers, Translate, Text Fragments, Content Index, Protocol Handler.
+*   **1. UI Security (High Priority):**
+    *   High: [omnibox.md](omnibox.md), [permissions.md](permissions.md), [autofill.md](autofill.md), [picture_in_picture.md](picture_in_picture.md), [payments.md](payments.md), [fedcm.md](fedcm.md)
+    *   Medium: [input.md](input.md), [navigation.md](navigation.md), [url_formatting.md](url_formatting.md), [web_app_identity.md](web_app_identity.md), [protocol_handler.md](protocol_handler.md), [webusb.md](webusb.md), [bluetooth.md](bluetooth.md), [plugin_security.md](plugin_security.md), [downloads.md](downloads.md), [portals.md](portals.md), [fenced_frames.md](fenced_frames.md), [drag_and_drop.md](drag_and_drop.md), [eye_dropper.md](eye_dropper.md)
+    *   Lower: [side_panel.md](side_panel.md) (*Note: Side Panel UAF was High VRP*)
+
+*   **2. Extension & DevTools Security (High Priority):**
+    *   High: [extension_security.md](extension_security.md), [extensions_debugger_api.md](extensions_debugger_api.md), [devtools.md](devtools.md)
+    *   Medium: [permissions.md](permissions.md), [downloads.md](downloads.md), [file_system_access.md](file_system_access.md), [content_security_policy.md](content_security_policy.md), [policy.md](policy.md)
+
+*   **3. Autofill & Input Handling (High Priority):**
+    *   High: [autofill.md](autofill.md)
+    *   Medium: [input.md](input.md), [eye_dropper.md](eye_dropper.md), [pointer_lock.md](pointer_lock.md)
+
+*   **4. IPC/Mojo Security (Medium Priority):**
+    *   Medium: [ipc.md](ipc.md), [mojo.md](mojo.md)
+    *   Lower: [process_lock.md](process_lock.md) (*Related to commit validation*)
+
+*   **5. Web API & Feature Security (Medium Priority):**
+    *   High: [site_isolation.md](site_isolation.md) (*Implicitly related*)
+    *   Medium: [privacy.md](privacy.md), [content_security_policy.md](content_security_policy.md), [iframe_sandbox.md](iframe_sandbox.md), [fedcm.md](fedcm.md), [portals.md](portals.md), [fenced_frames.md](fenced_frames.md), [service_workers.md](service_workers.md), [payments.md](payments.md), [intents.md](intents.md), [webserial.md](webserial.md), [webusb.md](webusb.md), [bluetooth.md](bluetooth.md), [coop.md](coop.md) (*Related*)
+    *   Lower: [performance_apis.md](performance_apis.md), [history.md](history.md), [background_fetch.md](background_fetch.md), [gpu.md](gpu.md), [webcodecs.md](webcodecs.md), [webgpu.md](webgpu.md), [webxr.md](webxr.md), [webshare.md](webshare.md), [push_messaging.md](push_messaging.md), [translation_ui.md](translation_ui.md), [content_index.md](content_index.md), [text_fragments.md](text_fragments.md), [worker_threads.md](worker_threads.md), [protocol_handler.md](protocol_handler.md)
+
+*   **6. Filesystem & Scheme Handling (Medium Priority):**
+    *   Medium: [file_system_access.md](file_system_access.md), [downloads.md](downloads.md), [intents.md](intents.md), [safe_browsing_service.md](safe_browsing_service.md)
+    *   Lower: [url_formatting.md](url_formatting.md)
+
+*   **7. Installer/Updater Security (High Priority):**
+    *   High: [installer_security.md](installer_security.md)
+
+*   **8. General Code Analysis Techniques (N/A - Methodology)**
+
+*   **9. Data Transfer Boundaries & Trust (Medium Priority):**
+    *   Medium: [drag_and_drop.md](drag_and_drop.md), [ipc.md](ipc.md), [file_system_access.md](file_system_access.md)
+
+*   **10. Parsing & Content Handling (Variable Priority):**
+    *   Lower: [plugin_security.md](plugin_security.md) (*PDF*)
+
+*   **11. Commit Validation & Transient State (Medium Priority):**
+    *   Medium: [navigation.md](navigation.md), [site_instance.md](site_instance.md), [process_lock.md](process_lock.md)
+
+*   **Other/Uncategorized:**
+    *   High: [android_webview.md](android_webview.md) (*WebView*)
+    *   Medium: [privacy.md](privacy.md) (*General*)
+    *   Lower: [infra_luci.md](infra_luci.md) (*Build/Infra*)
 
 By focusing on these VRP-informed areas and techniques, and by continuously updating the wiki, we can improve Chromium security research effectiveness.

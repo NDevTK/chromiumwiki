@@ -98,6 +98,6 @@ Privacy vulnerabilities often involve bypassing intended isolation or protection
 *   [downloads.md](downloads.md)
 *   [file_system_access.md](file_system_access.md)
 *   [input.md](input.md)
-*   [extensions_api.md](extensions_api.md)
+*   [extension_security.md](extension_security.md)
 *   [autofill.md](autofill.md)
 *   [fedcm.md](fedcm.md)

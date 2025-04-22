@@ -1,10 +1,10 @@
-# Component: Navigation &amp; Site Instance Selection
+# Component: Navigation & Site Instance Selection
 
 ## 1. Component Focus
 *   **Functionality:** Governs how Chromium handles navigations (user-initiated, script-initiated, redirects, etc.), determines the appropriate security context (`SiteInstance`, `BrowsingInstance`, `ProcessLock`), selects or creates the target `RenderProcessHost`, enforces navigation-related security policies (Site Isolation, CSP, COOP/COEP, SameSite), manages session history, and updates the browser UI (Omnibox, security indicators).
 *   **Key Logic:** Navigation initiation (`FrameLoader`, `NavigatorImpl`), creation and management of `NavigationRequest`, SiteInstance selection (`RenderFrameHostManager`, `SiteInstanceImpl`), BrowsingInstance management, process selection/reuse (`RenderProcessHostImpl`), policy enforcement (`ChildProcessSecurityPolicyImpl`, COOP/COEP checks, CSP checks), redirect handling, commit validation (`RenderFrameHostImpl::ValidateDidCommitParams`), session history management (`NavigationControllerImpl`), UI updates (`NavigationControllerDelegate`).
 *   **Core Files:**
-    *   `content/browser/renderer_host/navigation_request.cc`: Represents a single navigation, holds state, handles redirects, prepares for commit.
+    *   `content/browser/renderer_host/navigation_request.cc`: Represents a single navigation, holds state, handles redirects, prepares for commit. See [navigation_request.md](navigation_request.md) for details.
     *   `content/browser/renderer_host/render_frame_host_manager.cc`: Manages RFHs, central orchestrator for SiteInstance selection during navigation. Contains `GetSiteInstanceForNavigation`.
     *   `content/browser/site_instance_impl.*`: Represents a security principal within a `BrowsingInstance`. Key for Site Isolation. See [site_instance.md](site_instance.md).
     *   `content/browser/browsing_instance.*`: Groups related SiteInstances, defines scripting boundaries. See [browsing_instance.md](browsing_instance.md).
@@ -93,6 +93,7 @@ Navigation is a complex process with many potential pitfalls, frequently leading
 *(See extensive list categorized under patterns in Section 3)*
 
 ## 8. Cross-References
+*   [navigation_request.md](navigation_request.md)
 *   [site_instance.md](site_instance.md)
 *   [browsing_instance.md](browsing_instance.md)
 *   [site_info.md](site_info.md)
