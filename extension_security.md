@@ -13,6 +13,7 @@
     *   `chrome/common/extensions/api/`: Generated API schemas.
     *   `content/public/browser/site_instance.h`, `content/browser/renderer_host/render_frame_host_impl.cc`: Interaction with process model and Site Isolation.
     *   `content/public/browser/child_process_security_policy.h`: Used for checking URL access permissions.
+    *   `net/base/filename_util_icu.cc`: Contains path sanitization logic like `IsSafePortableRelativePath`.
 
 ## 2. Potential Logic Flaws & VRP Relevance
 
@@ -71,7 +72,7 @@ Extensions, even without overly broad permissions like `debugger`, can interact 
     *   Review incognito/profile separation logic (`util::CanCrossIncognito`, `util::IsIncognitoEnabled`) against *all* APIs that might pass tab/target IDs or contexts across these boundaries.
     *   Strengthen local file access control (`util::InitializeFileSchemeAccessForExtension`, `util::AllowFileAccess`, `util::MapUrlToLocalFilePath`) and ensure *all* relevant APIs (tabs, pageCapture, debugger, downloads) consistently check permissions *before* accessing `file://` URLs. Audit `net::GenerateFileName` and related utilities for path safety. (See README Tip #6)
     *   Verify robustness of context isolation, especially against Service Worker interception and IPC spoofing. The `util::CanRendererActOnBehalfOfExtension` function is critical for checking renderer capabilities. (See README Tip #4)
-*   **API Permission Checks:** Systematically audit API implementations (`*api.cc`) to ensure required manifest permissions and host permissions (`PermissionsData::CheckAPIAccess`, `ExtensionCanAccessURL`) are checked correctly and cannot be bypassed through indirect means (e.g., events, redirects). Audit permission checks in less commonly used or newer extension APIs. (See README Tip #2)
+*   **API Permission Checks:** Systematically audit API implementations (`*api.cc`) to ensure required manifest permissions and host permissions (`PermissionsData::HasAPIPermission`, `ExtensionCanAccessURL`) are checked correctly and cannot be bypassed through indirect means (e.g., events, redirects). Audit permission checks in less commonly used or newer extension APIs. (See README Tip #2)
 *   **UI Interaction Security:** Develop more robust defenses against UI obscuring via `chrome.windows` API or extension popups. Consider window layering priorities for sensitive prompts, input protection on prompts, and potentially restricting off-screen window positioning or interaction. (See README Tip #1, Tip #2)
 *   **Manifest Validation:** Ensure the manifest parser and CSP validator cover all relevant directives and enforce restrictions strictly (e.g., blocking remote code). (See README Tip #2)
 *   **Policy Enforcement:** Analyze how different APIs interact with enterprise policies like `runtime_blocked_hosts`.
@@ -84,13 +85,68 @@ Extensions, even without overly broad permissions like `debugger`, can interact 
 ## 4. Code Analysis
 
 *   `ExtensionUtil`: (`extensions/browser/extension_util.cc`) Contains utility functions like `IsIncognitoEnabled`, `CanCrossIncognito`, `CanBeIncognitoEnabled`, `AllowFileAccess`, `InitializeFileSchemeAccessForExtension`, `MapUrlToLocalFilePath`, `IsExtensionVisibleToContext`, and `CanRendererActOnBehalfOfExtension`. **Crucial for profile/incognito separation, file access control, and renderer capabilities.**
+    ```cpp
+    // extensions/browser/extension_util.cc
+    bool CanCrossIncognito(const Extension* extension,
+                           content::BrowserContext* context) {
+      // Check if the extension is allowed to run in incognito mode.
+      if (!IsIncognitoEnabled(extension->id(), context))
+        return false;
+      // Check if the extension can see the incognito context.
+      return IsExtensionVisibleToContext(extension, context);
+    }
+
+    bool AllowFileAccess(const ExtensionId& extension_id,
+                         content::BrowserContext* context) {
+      // Allow component extensions and extensions with file access enabled.
+      return base::CommandLine::ForCurrentProcess()->HasSwitch(
+                 switches::kDisableExtensionsFileAccessCheck) ||
+             ExtensionPrefs::Get(context)->AllowFileAccess(extension_id);
+    }
+
+    bool CanRendererActOnBehalfOfExtension(
+        const ExtensionId& extension_id,
+        content::RenderProcessHost* process) {
+      // Check if the process is associated with the given extension ID.
+      // ... logic involving ProcessMap ...
+      return ProcessMap::Get(process->GetBrowserContext())
+          ->Contains(extension_id, process->GetID());
+    }
+    ```
 *   `PermissionsManager`: (`extensions/browser/permissions_manager.cc`) Manages extension permissions.
-*   `PermissionsData`: (`extensions/common/permissions/permissions_data.cc`) Holds permission info, performs checks like `CanAccessPage`, `CheckAPIAccess`. Uses `PermissionMessageProvider`.
+*   `PermissionsData`: (`extensions/common/permissions/permissions_data.cc`) Holds permission info, performs checks like `CanAccessPage`, `HasAPIPermission`. Uses `PermissionMessageProvider`.
+    ```cpp
+    // extensions/common/permissions/permissions_data.cc
+    bool PermissionsData::HasAPIPermission(APIPermissionID permission) const {
+      base::AutoLock auto_lock(runtime_lock_);
+      // Check active permissions set.
+      return active_permissions_unsafe_->HasAPIPermission(permission);
+    }
+    ```
 *   `ExtensionWebContentsObserver`: (`extensions/browser/extension_web_contents_observer.cc`) Monitors navigations, potentially involved in permission checks or context tracking.
 *   API Implementations (`chrome/browser/extensions/api/.../`, `extensions/browser/api/`): Individual API logic (e.g., `downloads_api.cc`, `tabs_api.cc`, `windows_api.cc`, `storage_api.cc`, `runtime_api.cc`). **Needs checks for permissions, incognito access, policy blocking (`runtime_blocked_hosts`), input validation.**
 *   `TabsApi`: (`chrome/browser/extensions/api/tabs/tabs_api.cc`) Implements `chrome.tabs.*` functions. Uses `ExtensionTabUtil` for many operations.
 *   `ExtensionTabUtil`: (`chrome/browser/extensions/extension_tab_util.cc`) Helper functions for tab operations (scrubbing, opening, getting properties). Contains `PrepareURLForNavigation`, `GetScrubTabBehavior`, `CreateTabObject`, `IsTabStripEditable`.
-*   `DownloadsApi::DetermineFilenameFunction`: Calls `net::IsSafePortableRelativePath`. **Crucial check against path traversal.** Lacks `%` check for env vars.
+*   `DownloadsApi::DetermineFilenameFunction`: (`chrome/browser/extensions/api/downloads/downloads_api.cc`) Calls `net::IsSafePortableRelativePath`. **Crucial check against path traversal.** Lacks `%` check for env vars.
+    ```cpp
+    // chrome/browser/extensions/api/downloads/downloads_api.cc (within DetermineFilenameFunction::Run)
+    // ...
+    creator_suggested_filename = base::FilePath::FromUTF8Unsafe(filename);
+    if (!net::IsSafePortableRelativePath(creator_suggested_filename)) {
+      return RespondNow(Error(download_extension_errors::kInvalidFilename));
+    }
+    // ...
+    ```
+*   `net::IsSafePortableRelativePath`: (`net/base/filename_util_icu.cc`) Checks if a path is relative and contains only safe characters.
+    ```cpp
+    // net/base/filename_util_icu.cc
+    bool IsSafePortableRelativePath(const base::FilePath& path) {
+      if (path.empty() || path.IsAbsolute() || path.EndsWithSeparator())
+        return false;
+      // ... checks for '..' and unsafe characters ...
+      return true;
+    }
+    ```
 *   `DownloadsApi::DownloadFunction`: Explicitly sanitizes `%` in `filename`.
 *   `ScriptContext`: (`extensions/renderer/script_context.cc`) Represents an extension execution context in the renderer.
 *   `ContentScriptSet`: (`extensions/common/content_script_set.h`) Manages content script matching and injection.

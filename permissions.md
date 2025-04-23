@@ -16,11 +16,57 @@
 *   **UI Obscuring / Spoofing / Clickjacking:** Permission prompts being hidden or spoofed by other UI elements. (See README Tip #1 - UI Security)
     *   **Mechanism (General Occlusion Check):** `PermissionPromptBaseView` uses `PictureInPictureOcclusionTracker` to detect occlusion by always-on-top windows. `ShouldIgnoreButtonPressedEventHandling` uses this state (`occluded_by_picture_in_picture_`) to block input when occluded by PiP. This does *not* protect against occlusion by other non-always-on-top UI.
     *   **Mechanism (PEPC Anchoring/Positioning):** Unlike standard bubbles, `EmbeddedPermissionPrompt` anchors to an intermediate `EmbeddedPermissionPromptContentScrimView`. Final position uses `GetBubbleBounds`.
-    *   **Mechanism (Showing Inactive):** `PermissionPromptBubbleBaseView::ShowWidget()` calls `ShowInactive()` if the parent browser window is not active. It also uses `set_close_on_deactivate(false)` (line 66). This allows the prompt to remain open and potentially interactable even when obscured by other UI (like FedCM) that doesn't steal focus.
+    *   **Mechanism (Showing Inactive):** `PermissionPromptBubbleBaseView::ShowWidget()` calls `ShowInactive()` if the parent browser window is not active. It also uses `set_close_on_deactivate(false)`. This allows the prompt to remain open and potentially interactable even when obscured by other UI (like FedCM) that doesn't steal focus.
+        ```cpp
+        // chrome/browser/ui/views/permissions/permission_prompt_bubble_base_view.cc
+        void PermissionPromptBubbleBaseView::ShowWidget() {
+          // ...
+          if (parent_is_active) {
+            GetWidget()->Show();
+          } else {
+            GetWidget()->ShowInactive(); // <-- Allows prompt to show without stealing focus
+          }
+        }
+
+        PermissionPromptBubbleBaseView::PermissionPromptBubbleBaseView(...) {
+          // ...
+          set_close_on_deactivate(false); // <-- Prevents closing when focus moves elsewhere
+          // ...
+        }
+        ```
     *   **VRP Pattern (Overlaying Elements):** Prompts obscured by Picture-in-Picture windows (VRP: `342194497`, VRP2.txt#6928), extension popups/windows (VRP: `40058873`, VRP2.txt#7974, #12352), FedCM dialogs (VRP2.txt#13293, #7963), Permission Prompts (VRP2.txt#6928), custom cursors (VRP2.txt#11789, #15458). Requires robust occlusion checks and input protection. VRP #342194497 indicated the PiP occlusion mechanism might fail for PEPC prompts. (See README Tip #1 - Dialog/Prompt Obscuring)
     *   **VRP Pattern (PEPC Positioning Bugs):** Page Embedded Permission Control (PEPC) element rendering outside its initiator window in small windows, potentially obscuring browser UI or appearing over other origins (VRP: `341663594`, VRP2.txt#12915). Related to `GetBubbleBounds` complexity. (See README Tip #1 - Dialog/Prompt Spoofing)
 *   **Interaction Bypass (Clickjacking/Keyjacking/Tapjacking):** Tricking users into granting permissions without awareness. (See README Tip #1 - Input/Interaction Hijacking)
-    *   **Mechanism:** The combination of `ShowInactive()` and `set_close_on_deactivate(false)` in `PermissionPromptBubbleBaseView`, coupled with **limited input protection** in the base class `PermissionPromptBaseView`. `PermissionPromptBaseView::FilterUnintenedEventsAndRunCallbacks` checks for PiP occlusion and uses `IsPossiblyUnintendedInteraction` (a basic dialog timing check based on `GetDoubleClickInterval`), but **lacks general input protection** (like `InputEventActivationProtector`) against interaction when obscured by non-PiP, non-focus-stealing UI (e.g., FedCM, other permission prompts shown inactive). This allows interaction bypasses. Contrast with FedCM UI which *does* use `InputEventActivationProtector`.
+    *   **Mechanism:** The combination of `ShowInactive()` and `set_close_on_deactivate(false)` in `PermissionPromptBubbleBaseView` (see snippets above), coupled with **limited input protection** in the base class `PermissionPromptBaseView`. `PermissionPromptBaseView::FilterUnintenedEventsAndRunCallbacks` checks for PiP occlusion and uses `IsPossiblyUnintendedInteraction` (a basic dialog timing check based on `GetDoubleClickInterval`), but **lacks general input protection** (like `InputEventActivationProtector`) against interaction when obscured by non-PiP, non-focus-stealing UI (e.g., FedCM, other permission prompts shown inactive). This allows interaction bypasses. Contrast with FedCM UI, Downloads UI, and Payments UI which *do* use `InputEventActivationProtector`:
+        ```cpp
+        // chrome/browser/ui/views/webid/fedcm_account_selection_view_desktop.cc
+        void FedCmAccountSelectionView::ShowDialogWidget() {
+          // ...
+          // Initialize InputEventActivationProtector to handle potentially unintended
+          // input events.
+          if (!input_protector_) {
+            input_protector_ = std::make_unique<views::InputEventActivationProtector>(); // <-- FedCM uses robust protection
+          }
+          // ...
+        }
+
+        // chrome/browser/ui/views/download/bubble/download_bubble_row_view.cc
+        DownloadBubbleRowView::DownloadBubbleRowView(...) :
+          // ...
+          input_protector_(
+              std::make_unique<views::InputEventActivationProtector>()), // <-- Downloads UI uses robust protection
+          // ...
+        {}
+
+        // chrome/browser/ui/views/payments/payment_sheet_view_controller.cc
+        PaymentSheetViewController::PaymentSheetViewController(...) :
+          // ...
+          input_protector_(
+              std::make_unique<views::InputEventActivationProtector>()) // <-- Payments UI uses robust protection
+        {
+          // ...
+        }
+        ```
     *   **VRP Pattern (Keyjacking):** Capturing keypresses (Tab, Enter) intended for an obscured permission prompt (VRP: `1371215`; VRP2.txt#1478, #13544, #6928, #7963). Possible due to missing general input protection. (See README Tip #1 - Keyjacking)
     *   **VRP Pattern (Tapjacking):** Bypassing interaction delays using rapid taps/double-taps (VRP2.txt#1478, #8036, #10088, #15112). Explicit bypass for Permission Element tapjacking (VRP2.txt#7863). Requires consistent delay enforcement across input types. Android-specific tapjacking (VRP2.txt#8036). (See README Tip #1 - Tapjacking)
     *   **VRP Pattern (Focus/Resize Abuse):** Freezing/resizing the browser window during prompt display to bypass interaction delays or hide the prompt entirely (VRP2.txt#10088, #13545). (See README Tip #1 - Focus/Resize Abuse)
@@ -49,11 +95,30 @@
 *   `PermissionPrompt` (`components/permissions/`): Interface for permission UI. Implementations include bubble views, PEPC.
 *   `PermissionPromptDesktop` (`chrome/browser/ui/views/permissions/`): Base class for desktop prompts. Doesn't show UI directly.
 *   `PermissionPromptBaseView` (`chrome/browser/ui/views/permissions/`): Base class for desktop prompt views. Implements PiP occlusion check logic (`StartTrackingPictureInPictureOcclusion`, `OnOcclusionStateChanged`, `ShouldIgnoreButtonPressedEventHandling`). Button clicks call `FilterUnintenedEventsAndRunCallbacks`. Checks `IsPossiblyUnintendedInteraction`.
-*   `PermissionPromptBubbleBaseView` (`chrome/browser/ui/views/permissions/`): Base class for bubble UI view. Inherits from `PermissionPromptBaseView` and `views::BubbleDialogDelegateView`. Uses `ShowInactive()` if parent browser inactive, uses `set_close_on_deactivate(false)`. **Lacks specific input protection mechanism like `InputEventActivationProtector`.** Calls `FilterUnintenedEventsAndRunCallbacks` for button actions.
+    ```cpp
+    // chrome/browser/ui/views/permissions/permission_prompt_base_view.cc
+    void PermissionPromptBaseView::FilterUnintenedEventsAndRunCallbacks(
+        int button_id,
+        const ui::Event& event) {
+      // Ignore button clicks on occluded prompts.
+      if (ShouldIgnoreButtonPressedEventHandling()) {
+        return;
+      }
+
+      // Ignore unintentional inputs. This includes inputs that occur before the
+      // default double-click interval has passed, or inputs that occur while the
+      // prompt is not the active window.
+      if (IsPossiblyUnintendedInteraction(event)) {
+        return;
+      }
+      // ... run callbacks ...
+    }
+    ```
+*   `PermissionPromptBubbleBaseView` (`chrome/browser/ui/views/permissions/`): Base class for bubble UI view. Inherits from `PermissionPromptBaseView` and `views::BubbleDialogDelegateView`. Uses `ShowInactive()` if parent browser inactive, uses `set_close_on_deactivate(false)`. **Lacks specific input protection mechanism like `InputEventActivationProtector`.** Calls `FilterUnintenedEventsAndRunCallbacks` for button actions. (See snippets in Section 2).
 *   `EmbeddedPermissionPrompt` (`chrome/browser/ui/views/permissions/`): Controller for PEPC views. Manages the specific view types and the content scrim. Calls `UpdateAnchor` on the view, passing the scrim widget.
 *   `EmbeddedPermissionPrompt...View` (`chrome/browser/ui/views/permissions/`): Specific PEPC prompt views (Ask, PreviouslyGranted, etc.), inheriting from `PermissionPromptBubbleBaseView`.
 *   `EmbeddedPermissionPromptContentScrimView` (`chrome/browser/ui/views/permissions/`): Implements the scrim layer used as the anchor for PEPC prompts.
-*   `InputEventActivationProtector` (`ui/views/input_event_activation_protector.cc`): Helper class providing time-based input protection after visibility change or window movement. Blocks events within double-click interval of protection timestamp or previous event. **Not used by `PermissionPromptBubbleBaseView`.**
+*   `InputEventActivationProtector` (`ui/views/input_event_activation_protector.cc`): Helper class providing time-based input protection after visibility change or window movement. Blocks events within double-click interval of protection timestamp or previous event. **Not used by `PermissionPromptBubbleBaseView`.** Used by FedCM UI (`chrome/browser/ui/views/webid/fedcm_account_selection_view_desktop.cc`), Downloads UI (`chrome/browser/ui/views/download/bubble/download_bubble_row_view.cc`), and Payments UI (`chrome/browser/ui/views/payments/payment_sheet_view_controller.cc`) (see snippets in Section 2).
 *   `PermissionContextBase` (`components/permissions/`): Base class for context-specific permission logic (e.g., `GeolocationPermissionContextImpl`). Contains context verification logic.
 *   `PermissionControllerDelegate` (`chrome/browser/permissions/permission_manager_impl.cc`): Chrome's implementation handling actual permission storage and decisions.
 *   `PictureInPictureOcclusionTracker` (`chrome/browser/picture_in_picture/`): Tracks always-on-top windows and determines occlusion state. Needs investigation regarding how it handles widgets anchored indirectly (like PEPC via scrim).

@@ -167,46 +167,52 @@ This section provides actionable tips for security research in Chromium, informe
 *   **1. UI Security (High Priority):**
     *   High: [omnibox.md](omnibox.md), [permissions.md](permissions.md), [autofill.md](autofill.md), [picture_in_picture.md](picture_in_picture.md), [payments.md](payments.md), [fedcm.md](fedcm.md)
     *   Medium: [input.md](input.md), [navigation.md](navigation.md), [url_formatting.md](url_formatting.md), [web_app_identity.md](web_app_identity.md), [protocol_handler.md](protocol_handler.md), [webusb.md](webusb.md), [bluetooth.md](bluetooth.md), [plugin_security.md](plugin_security.md), [downloads.md](downloads.md), [portals.md](portals.md), [fenced_frames.md](fenced_frames.md), [drag_and_drop.md](drag_and_drop.md), [eye_dropper.md](eye_dropper.md)
-    *   Lower: [side_panel.md](side_panel.md) (*Note: Side Panel UAF was High VRP*)
+    *   Lower: [side_panel.md](side_panel.md) (*Note: Side Panel UAF was High VRP*), [payment_handler.md](payment_handler.md), [popup_blocker.md](popup_blocker.md), [presentation_request_notification.md](presentation_request_notification.md), [render_widget_host_view_android.md](render_widget_host_view_android.md), [render_widget_host_view_aura.md](render_widget_host_view_aura.md), [screen_capture.md](screen_capture.md), [screen_sharing.md](screen_sharing.md), [tabs.md](tabs.md), [url_info.md](url_info.md), [user_notes.md](user_notes.md)
 
 *   **2. Extension & DevTools Security (High Priority):**
     *   High: [extension_security.md](extension_security.md), [extensions_debugger_api.md](extensions_debugger_api.md), [devtools.md](devtools.md)
     *   Medium: [permissions.md](permissions.md), [downloads.md](downloads.md), [file_system_access.md](file_system_access.md), [content_security_policy.md](content_security_policy.md), [policy.md](policy.md)
+    *   Lower: [extension_install_dialog.md](extension_install_dialog.md), [extensions_declarative_net_request_api.md](extensions_declarative_net_request_api.md), [extensions_web_request_api.md](extensions_web_request_api.md), [extensions_webrtc_audio_private_api.md](extensions_webrtc_audio_private_api.md), [native_messaging.md](native_messaging.md)
 
 *   **3. Autofill & Input Handling (High Priority):**
     *   High: [autofill.md](autofill.md)
     *   Medium: [input.md](input.md), [eye_dropper.md](eye_dropper.md), [pointer_lock.md](pointer_lock.md)
+    *   Lower:
 
 *   **4. IPC/Mojo Security (Medium Priority):**
     *   Medium: [ipc.md](ipc.md), [mojo.md](mojo.md)
-    *   Lower: [process_lock.md](process_lock.md) (*Related to commit validation*)
+    *   Lower: [process_lock.md](process_lock.md) (*Related to commit validation*), [child_process_security_policy_impl.md](child_process_security_policy_impl.md), [guest_view_security.md](guest_view_security.md), [render_process_host.md](render_process_host.md)
 
 *   **5. Web API & Feature Security (Medium Priority):**
     *   High: [site_isolation.md](site_isolation.md) (*Implicitly related*)
     *   Medium: [privacy.md](privacy.md), [content_security_policy.md](content_security_policy.md), [iframe_sandbox.md](iframe_sandbox.md), [fedcm.md](fedcm.md), [portals.md](portals.md), [fenced_frames.md](fenced_frames.md), [service_workers.md](service_workers.md), [payments.md](payments.md), [intents.md](intents.md), [webserial.md](webserial.md), [webusb.md](webusb.md), [bluetooth.md](bluetooth.md), [coop.md](coop.md) (*Related*)
-    *   Lower: [performance_apis.md](performance_apis.md), [history.md](history.md), [background_fetch.md](background_fetch.md), [gpu.md](gpu.md), [webcodecs.md](webcodecs.md), [webgpu.md](webgpu.md), [webxr.md](webxr.md), [webshare.md](webshare.md), [push_messaging.md](push_messaging.md), [translation_ui.md](translation_ui.md), [content_index.md](content_index.md), [text_fragments.md](text_fragments.md), [worker_threads.md](worker_threads.md), [protocol_handler.md](protocol_handler.md)
+    *   Lower: [performance_apis.md](performance_apis.md), [history.md](history.md), [background_fetch.md](background_fetch.md), [gpu.md](gpu.md), [webcodecs.md](webcodecs.md), [webgpu.md](webgpu.md), [webxr.md](webxr.md), [webshare.md](webshare.md), [push_messaging.md](push_messaging.md), [translation_ui.md](translation_ui.md), [content_index.md](content_index.md), [text_fragments.md](text_fragments.md), [worker_threads.md](worker_threads.md), [protocol_handler.md](protocol_handler.md), [cross_origin_resource_policy.md](cross_origin_resource_policy.md), [gpu_process.md](gpu_process.md), [indexed_db.md](indexed_db.md), [permissions_policy.md](permissions_policy.md), [quic.md](quic.md), [resource_load_scheduler.md](resource_load_scheduler.md), [resource_management.md](resource_management.md), [storage.md](storage.md), [webauthn.md](webauthn.md), [webrtc.md](webrtc.md), [websockets.md](websockets.md)
 
 *   **6. Filesystem & Scheme Handling (Medium Priority):**
     *   Medium: [file_system_access.md](file_system_access.md), [downloads.md](downloads.md), [intents.md](intents.md), [safe_browsing_service.md](safe_browsing_service.md)
-    *   Lower: [url_formatting.md](url_formatting.md)
+    *   Lower: [url_formatting.md](url_formatting.md), [url_utilities.md](url_utilities.md)
 
 *   **7. Installer/Updater Security (High Priority):**
     *   High: [installer_security.md](installer_security.md)
+    *   Medium:
+    *   Lower:
 
 *   **8. General Code Analysis Techniques (N/A - Methodology)**
 
 *   **9. Data Transfer Boundaries & Trust (Medium Priority):**
     *   Medium: [drag_and_drop.md](drag_and_drop.md), [ipc.md](ipc.md), [file_system_access.md](file_system_access.md)
+    *   Lower:
 
 *   **10. Parsing & Content Handling (Variable Priority):**
-    *   Lower: [plugin_security.md](plugin_security.md) (*PDF*)
+    *   Lower: [plugin_security.md](plugin_security.md) (*PDF*), [printing.md](printing.md), [spellcheck.md](spellcheck.md)
 
 *   **11. Commit Validation & Transient State (Medium Priority):**
     *   Medium: [navigation.md](navigation.md), [site_instance.md](site_instance.md), [process_lock.md](process_lock.md)
+    *   Lower: [browsing_instance.md](browsing_instance.md), [frame_tree.md](frame_tree.md), [navigation_request.md](navigation_request.md), [render_frame_host_impl.md](render_frame_host_impl.md), [site_info.md](site_info.md), [site_instance_group.md](site_instance_group.md)
 
 *   **Other/Uncategorized:**
     *   High: [android_webview.md](android_webview.md) (*WebView*)
     *   Medium: [privacy.md](privacy.md) (*General*)
-    *   Lower: [infra_luci.md](infra_luci.md) (*Build/Infra*)
+    *   Lower: [infra_luci.md](infra_luci.md) (*Build/Infra*), [android_webview_app_defined_websites.md](android_webview_app_defined_websites.md)
 
 By focusing on these VRP-informed areas and techniques, and by continuously updating the wiki, we can improve Chromium security research effectiveness.
