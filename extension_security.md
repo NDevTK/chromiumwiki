@@ -127,7 +127,7 @@ Extensions, even without overly broad permissions like `debugger`, can interact 
 *   API Implementations (`chrome/browser/extensions/api/.../`, `extensions/browser/api/`): Individual API logic (e.g., `downloads_api.cc`, `tabs_api.cc`, `windows_api.cc`, `storage_api.cc`, `runtime_api.cc`). **Needs checks for permissions, incognito access, policy blocking (`runtime_blocked_hosts`), input validation.**
 *   `TabsApi`: (`chrome/browser/extensions/api/tabs/tabs_api.cc`) Implements `chrome.tabs.*` functions. Uses `ExtensionTabUtil` for many operations.
 *   `ExtensionTabUtil`: (`chrome/browser/extensions/extension_tab_util.cc`) Helper functions for tab operations (scrubbing, opening, getting properties). Contains `PrepareURLForNavigation`, `GetScrubTabBehavior`, `CreateTabObject`, `IsTabStripEditable`.
-*   `DownloadsApi::DetermineFilenameFunction`: (`chrome/browser/extensions/api/downloads/downloads_api.cc`) Calls `net::IsSafePortableRelativePath`. **Crucial check against path traversal.** Lacks `%` check for env vars.
+*   `DownloadsApi::DetermineFilenameFunction`: (`chrome/browser/extensions/api/downloads/downloads_api.cc`) Calls `net::IsSafePortableRelativePath`. **Crucial check against path traversal.** Lacks `%` check for env vars (unlike `DownloadFunction`).
     ```cpp
     // chrome/browser/extensions/api/downloads/downloads_api.cc (within DetermineFilenameFunction::Run)
     // ...

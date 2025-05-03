@@ -52,7 +52,22 @@
     *   Renderer performs drop action. Source notified via `DragSourceEndedAt`.
 
 ## 3. Potential Logic Flaws & VRP Relevance
-*   **Sandbox Escape via IPC (VRP2.txt#4):** Insufficient validation of drag metadata sent via IPC from a compromised renderer during `RenderWidgetHostImpl::StartDragging` or related handlers.
+*   **Sandbox Escape via IPC (VRP2.txt#4):** Insufficient validation of drag metadata sent via IPC from a compromised renderer during `RenderWidgetHostImpl::StartDragging` or related handlers. While `StartDragging` filters the actual `DropData` based on permissions, it forwards the renderer-provided `drag_operations_mask` and `event_info` (containing screen location) directly to the delegate view, potentially allowing a compromised renderer to influence the drag operation if the platform handler trusts this metadata:
+    ```cpp
+    // content/browser/renderer_host/render_widget_host_impl.cc
+    void RenderWidgetHostImpl::StartDragging(
+        /* ... */, DragOperationsMask drag_operations_mask, /* ... */,
+        blink::mojom::DragEventSourceInfoPtr event_info) {
+      // ... DropData filtering happens here ...
+
+      RenderViewHostDelegateView* view = delegate_->GetDelegateView();
+      // ... checks ...
+
+      // Filtered data, but original mask and event_info are passed down
+      view->StartDragging(filtered_data, source_origin, drag_operations_mask, image,
+                          offset, rect, *event_info, this);
+    }
+    ```
 *   **File Access via Tampered DropData:** While file permissions are granted late (`PrepareDropDataForChildProcess`), manipulation of file paths *before* this point in `content::DropData` or `ui::OSExchangeData` could potentially influence permission granting or target location.
 *   **Renderer Taint Spoofing:** Seems difficult as taint is set browser-side in `MarkRendererTaintedFromOrigin` based on the source context.
 *   **SOP Bypass / Information Leak:**
@@ -86,7 +101,7 @@
 *   **Exo Taint Tracking:** Investigate the lack of taint tracking when drags originate from Exo (`exo::DragDropOperation`). Could this allow tainted data (e.g., files from web content dropped into an Exo app) to bypass checks?
 *   **Exo `ParseFileSystemSources`:** Audit the pickle parsing logic in `file_manager::util::ParseFileSystemSources` for vulnerabilities, although it requires the source to be the Files App.
 *   **`IsImageAccessibleFromFrame` Staleness:** Can the accessibility state checked by `ImageResourceContent::IsAccessAllowed()` change between drag start and drop, making the browser check stale?
-*   **IPC Validation (`StartDragging`):** Audit validation of metadata in `RenderWidgetHostImpl::OnStartDragging`. (VRP2.txt#4).
+*   **IPC Validation (`StartDragging`):** Audit validation of metadata in `RenderWidgetHostImpl::StartDragging`. (VRP2.txt#4).
 *   **`DownloadURL` / SameSite:** Focus investigation on the network service and cookie handling logic after the download request is initiated by `DragDownloadFileUI::InitiateDownload`. (VRP: `40060358`).
 
 ## 6. Related VRP Reports

@@ -12,7 +12,7 @@
 
 ## 2. Potential Logic Flaws & VRP Relevance
 *   **Permission Bypass/Origin Confusion:** Flaws allowing a site to subscribe for pushes without proper permission, or receive pushes intended for a different origin.
-    *   **VRP Pattern (Origin Check Bypass):** Lack of origin checks in Mojo IPC handling allowed compromised renderers to interact with the Push Messaging API on behalf of other origins (VRP: `1275626`). See [ipc.md](ipc.md), [mojo.md](mojo.md).
+    *   **VRP Pattern (Origin Check Bypass/Insufficiency):** Historically, insufficient origin checks or bypasses in Mojo IPC handling allowed compromised renderers to interact with the Push Messaging API on behalf of other origins (VRP: `1275626`). See [ipc.md](ipc.md), [mojo.md](mojo.md).
 *   **Subscription Management Issues:** Errors in creating, updating, or removing subscriptions, potentially leading to duplicate messages, missed messages, or DoS.
 *   **Message Delivery Flaws:** Incorrectly routing push messages to the wrong service worker, or failing to deliver messages. Race conditions in service worker startup/shutdown interacting with message delivery.
 *   **Information Leaks:** Leaking subscription endpoints, application server keys, or message contents.
@@ -33,12 +33,16 @@
 *   `ServiceWorkerRegistration`: Holds push subscription information. `ServiceWorkerVersion::DispatchPushEvent`.
 
 ## 5. Areas Requiring Further Investigation
-*   **Mojo Interface Security:** Audit the `blink.mojom.PushMessaging` interface and its browser-side implementation (`PushMessagingManager`) for missing origin/permission checks (VRP: `1275626`).
+*   **Mojo Interface Security:** Audit the `blink.mojom.PushMessaging` interface and its browser-side implementation (`PushMessagingManager`) for missing or insufficient origin/permission checks (VRP: `1275626`).
 *   **Subscription Renewal/Expiration:** How is subscription validity handled? Are there edge cases around renewal?
 *   **Message Payload Handling:** How is push message payload data handled? Are there size limits? Is decryption handled securely if applicable?
 *   **Error Handling:** Analyze error reporting for subscription failures or message delivery issues.
 
 ## 6. Related VRP Reports
-*   VRP: `1275626` (Origin check bypass in Mojo IPC)
+*   VRP: `1275626` (Origin check bypass/insufficiency in Mojo IPC)
 
-*(See also [service_workers.md](service_workers.md), [permissions.md](permissions.md), [ipc.md](ipc.md), [mojo.md](mojo.md))*
+## 7. Cross-References
+*   [service_workers.md](service_workers.md)
+*   [permissions.md](permissions.md)
+*   [ipc.md](ipc.md)
+*   [mojo.md](mojo.md)

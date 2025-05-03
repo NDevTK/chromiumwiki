@@ -101,3 +101,15 @@
 *   **Unicode Issues:** VRP2.txt#16501 (Hyphens), VRP2.txt#12423 (German Sharp S).
 
 *(Note: This page focuses on Omnibox logic. Related issues might exist in URL parsing libraries, NavigationController, or UI views.)*
+
+## 7. Cross-References
+*   [url_formatting.md](url_formatting.md) (Parsing, Elision)
+*   [navigation.md](navigation.md) (State Synchronization, Timing)
+*   [input.md](input.md) (Input Handling, Overlays)
+*   [picture_in_picture.md](picture_in_picture.md) (UI Overlays)
+*   [fedcm.md](fedcm.md) (UI Overlays)
+*   [extension_security.md](extension_security.md) (UI Overlays, Keywords)
+*   [downloads.md](downloads.md) (Redirects, State)
+*   [protocol_handler.md](protocol_handler.md) (Scheme Handling)
+*   [web_share.md](web_share.md) (URL Elision)
+*   [privacy.md](privacy.md) (Security Indicators, State)

@@ -6,7 +6,23 @@ This page documents potential security vulnerabilities related to inter-process 
 
 *   **Insufficient Validation/Access Control:** Browser-process handlers failing to validate data or check permissions for messages received from less privileged processes (renderers, utility processes).
     *   **VRP Pattern (Missing Origin/Permission Checks):** Allowing actions on behalf of incorrect origins (e.g., Push Messaging VRP: `1275626`; Content Index VRP: `1263530`, `1263528`). Extensions accessing APIs without proper checks (VRP2.txt#11815).
-    * **VRP Pattern (Capability Bypass via Unvalidated Metadata):** Allowing less privileged processes to trigger privileged actions by sending valid *data* but potentially unvalidated *metadata* received via IPC. Example: The StartDragging IPC handler (RenderWidgetHostImpl::StartDragging) filters dragged file paths/URLs based on renderer permissions but forwards metadata like starting screen location (event_info->location) and allowed operations mask (drag_operations_mask) to the platform drag client (WebContentsView*::StartDragging->aura::client::DragDropClient::StartDragAndDrop). A compromised renderer could send crafted metadata. If the platform client (e.g., ash::DragDropController) improperly uses this unvalidated metadata during its nested drag loop or OS interactions (rather than relying solely on trusted, real-time events or delegate responses), it could potentially lead to unintended UI control (VRP2.txt#4). See [drag_and_drop.md](drag_and_drop.md).
+    * **VRP Pattern (Capability Bypass via Unvalidated Metadata):** Allowing less privileged processes to trigger privileged actions by sending valid *data* but potentially unvalidated *metadata* received via IPC. A compromised renderer could send crafted metadata. For instance, in `RenderWidgetHostImpl::StartDragging` (VRP2.txt#4), while file paths in the `DropData` are filtered based on renderer permissions, the `drag_operations_mask` and `event_info` (containing screen location) are passed directly to the delegate view:
+        ```cpp
+        // content/browser/renderer_host/render_widget_host_impl.cc
+        void RenderWidgetHostImpl::StartDragging(
+            /* ... */, DragOperationsMask drag_operations_mask, /* ... */,
+            blink::mojom::DragEventSourceInfoPtr event_info) {
+          // ... DropData filtering happens here ...
+
+          RenderViewHostDelegateView* view = delegate_->GetDelegateView();
+          // ... checks ...
+
+          // Filtered data, but original mask and event_info are passed down
+          view->StartDragging(filtered_data, source_origin, drag_operations_mask, image,
+                              offset, rect, *event_info, this);
+        }
+        ```
+        If the platform client (e.g., `ash::DragDropController`) improperly uses this unvalidated metadata during its nested drag loop or OS interactions (rather than relying solely on trusted, real-time events or delegate responses), it could potentially lead to unintended UI control. See [drag_and_drop.md](drag_and_drop.md).
     *   **VRP Pattern (Incorrect Destination Handling):** Browser process mishandling messages intended for a different process (e.g., Browser handling renderer `ACCEPT_BROKER_CLIENT` message VRP2.txt#370).
 *   **Memory Safety (UAF, Buffer Overflows, Integer Overflows, Type Confusion):** Classic memory safety bugs within the IPC message handling code itself, or in the code processing the received data, especially when parsing complex data structures or handling large messages. Type confusion in Mojo interfaces (VRP: `1337607`).
 *   **Race Conditions & State Confusion:** Asynchronous nature of IPC leading to race conditions, dangling pointers (e.g., `PermissionRequestManager` UAF VRP: `1424437`), or inconsistent state management across processes. Use-after-free triggered via IPC through side panel feature (VRP: `40061678`). Double fetch via code cache IPC (VRP2.txt#542).
@@ -23,7 +39,7 @@ This page documents potential security vulnerabilities related to inter-process 
 ### Mojo (`mojo/`) Specific Considerations:
 *   Modern IPC framework based on defined interfaces (`.mojom` files).
 *   Interfaces can be defined between various process types (browser, renderer, GPU, utility, services).
-*   Focus on validation within the browser-process implementation of interfaces exposed to less privileged processes. Check for `ReportBadMessage` calls, which often indicate security checks.
+*   Focus on validation within the browser-process implementation of interfaces exposed to less privileged processes. Check for `ReportBadMessage` calls, which often indicate security checks. **`ReportBadMessage` is widely used in privileged process handlers (e.g., in `content/browser/renderer_host/`) to terminate renderers sending invalid messages, enforcing checks on feature flags, frame state/context, origins, parameters, and API-specific rules. Its heavy usage in areas like Fenced Frames indicates complex security boundaries.**
 *   Analyze interactions with interface brokers (`BrowserInterfaceBroker`, `RenderFrameHost::GetAssociatedInterface`, etc.) for potential security issues.
 
 ## Further Analysis and Potential Issues:
@@ -39,8 +55,8 @@ This page documents potential security vulnerabilities related to inter-process 
 *   **Mojo Interface Validation (Privileged Processes):**
     *   Systematically review implementations in the browser process (and other privileged processes like Network, GPU) of Mojo interfaces exposed to less privileged processes (renderer, utility).
     *   **Focus on Origin/Permission Checks:** Pay special attention to interfaces handling features implicated in VRPs (Push Messaging VRP `1275626` - check handlers in `content/browser/push_messaging/`; Content Index VRP `1263530`/`1263528` - check handlers in `content/browser/content_index/`; Extensions VRP2.txt#11815 - check extension API handlers). Verify handlers robustly check the sender's origin (`RenderFrameHost::GetLastCommittedOrigin`) and permissions (`ChildProcessSecurityPolicy`) before acting.
-    *   **Focus on Metadata Validation:** Audit handlers receiving complex data structures or parameters beyond simple URLs/origins. Ensure *metadata* (e.g., screen coordinates, flags, operation masks in `RenderWidgetHostImpl::OnStartDragging` - VRP2.txt#4) is validated or treated as untrusted before use in privileged operations or platform APIs.
-    *   **Look for `ReportBadMessage` calls** as indicators of existing security checks; ensure checks are comprehensive.
+    *   **Focus on Metadata Validation:** Audit handlers receiving complex data structures or parameters beyond simple URLs/origins. Ensure *metadata* (e.g., screen coordinates, flags, operation masks in `RenderWidgetHostImpl::StartDragging` - VRP2.txt#4) is validated or treated as untrusted before use in privileged operations or platform APIs.
+    *   **Look for `ReportBadMessage` calls** as indicators of existing security checks; ensure checks are comprehensive and cover all relevant parameters. Note its heavy use for Fenced Frame validation.
 *   **Race Conditions & State Management (UAF):**
     *   Audit component lifecycles interacting heavily with asynchronous IPCs.
     *   Specifically review `PermissionRequestManager` (`components/permissions/`) state management related to request cancellation/finalization IPCs (VRP `1424437`). Are there race conditions between IPC arrival and internal state changes/object destruction?
@@ -66,3 +82,11 @@ This page documents potential security vulnerabilities related to inter-process 
 *   `RenderWidgetHostImpl::OnUpdateDragOperation`: Browser receives chosen drop operation from Renderer via IPC.
 * Interface Brokers (`BrowserInterfaceBroker`)
 * `ChildProcessSecurityPolicy`
+
+## Cross-References
+*   [mojo.md](mojo.md)
+*   [drag_and_drop.md](drag_and_drop.md)
+*   [permissions.md](permissions.md) (Related UAF VRP)
+*   [side_panel.md](side_panel.md) (Related UAF VRP)
+*   [extension_security.md](extension_security.md) (IPC Spoofing)
+*   [installer_security.md](installer_security.md) (COM EoP)
