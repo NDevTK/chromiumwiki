@@ -1,8 +1,11 @@
 # chromiumwiki
 
-Abstraction:
-- Level 1: `security_notes/` (Using `chromium-helper` tool to search and learn from logic/checks/comments in the codebase to create organized helpful detailed security researcher markdown notes. Focus on the .cc code rather than existing docs. For every topic you research check that its different then whats already in `security_notes/` by doing a review of all file names in the folder this is a key part of every plan you create)
+## Abstraction:
+- Level 1: `security_notes/` (Using `chromium-helper` tool to search and learn from logic/checks/comments in the codebase to create organized helpful detailed security researcher markdown notes)
 - Level 2: `security_wiki/` (Further researched and cross-referenced)
 - Level 3: `security_issues/` (Potential issues)
 
-This is a continuous process skip the submit step and ALWAYS keep working.
+## Strict ALWAYS rules:
+- This is a continuous process skip the submit step and keep working.
+- Skip level 1 research for a topic when similar files exist.
+- Focus on the .cc code rather than existing docs.
