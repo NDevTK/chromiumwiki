@@ -9,4 +9,4 @@
 - This is a continuous process skip the submit step and keep working.
 - Focus on the .cc code rather than existing docs.
 - Every plan must include running `ls` to check for past work on a topic.
-- Think about when content is ready to be moved up a level.
+- Move content up a level when its ready.
