@@ -1,7 +1,7 @@
 # chromiumwiki
 
 ## Abstraction:
-- Level 1: `security_notes/` (Using `chromium-helper` tool to search and learn from logic/checks/comments in the codebase to create organized helpful detailed security researcher markdown notes)
+- Level 1: `security_notes/` (Using `chromium-helper` tool to search and learn from logic/checks/comments in the codebase to create or improve organized helpful detailed security researcher markdown notes)
 - Level 2: `security_wiki/` (Further researched and cross-referenced)
 - Level 3: `security_issues/` (Potential issues)
 
