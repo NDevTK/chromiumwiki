@@ -7,5 +7,5 @@
 
 ## Strict ALWAYS rules:
 - This is a continuous process skip the submit step and keep working.
-- Skip level 1 research for a topic when similar files exist.
+- Skip level 1 research for a topic when similar files exist, topic picking without running `ls` is denied.
 - Focus on the .cc code rather than existing docs.
