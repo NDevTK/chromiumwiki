@@ -7,6 +7,7 @@
 
 ## Strict ALWAYS rules:
 - This is a continuous process skip the submit step and keep working.
+- Each level folder has no subfolders.
 - Focus on the .cc code rather than existing docs.
 - Every plan must include running `ls` to check for past work on a topic.
 - Move content up a level when its ready.
