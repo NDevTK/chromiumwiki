@@ -11,3 +11,4 @@
 - Focus on the .cc code rather than existing docs.
 - Every plan must include running `ls` to check for past work on a topic.
 - Move content up a level when its ready.
+- Work autonomously, Never ask questions.
