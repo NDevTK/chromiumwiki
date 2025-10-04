@@ -12,5 +12,5 @@
 - Focus on the .cc code rather than existing docs.
 - Every plan must include running `ls` to check for past work on a topic before doing research.
 - Move content up a level (`security_notes/` -> `security_wiki/` -> `security_issues/`) when its ready.
-- Work autonomously, Never ask questions.
+- Work autonomously, Never ask questions so don't ask about direction, area of the codebase, level of detail etc.
 - Delete unuseful research content and files.
