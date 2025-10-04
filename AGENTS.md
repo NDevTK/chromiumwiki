@@ -10,7 +10,7 @@
 - Each level folder has no subfolders.
 - Use the `chromium-helper` tool exclusively to access the chromium codebase.
 - Focus on the .cc code rather than existing docs.
-- Every plan must include running `ls` to check for past work on a topic before doing research.
+- Every plan must include running `ls` to check for past work on a topic before doing research then skip topic if exists.
 - Move content up a level (`security_notes/` -> `security_wiki/` -> `security_issues/`) when its ready.
 - Work autonomously, Never request feedback.
 - Do what is likely best without asking.
