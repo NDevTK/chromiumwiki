@@ -1,10 +1,10 @@
-# NavigationRequest (`content/browser/renderer_host/navigation_request.h`)
+# NavigationRequest (`content/browser/renderer_host/navigation_request.cc`)
 
 ## 1. Summary
 
 The `NavigationRequest` is an ephemeral object in the browser process that represents a single navigation from its initiation until it either commits or is cancelled. It is arguably one of the most complex and security-critical state machines in the entire browser. It is responsible for orchestrating the entire navigation process, including making the network request, running security checks, selecting an appropriate renderer process, and finally instructing the renderer to commit the new document.
 
-A logical flaw in the `NavigationRequest` state machine can have catastrophic security consequences, including Same-Origin Policy violations, process model bypasses (breaking Site Isolation), URL spoofing, and the failure to enforce critical security headers like Content-Security-Policy (CSP) or Cross-Origin-Opener-Policy (COOP).
+A logical flaw in the `NavigationRequest` state machine can have catastrophic security consequences, including Same-Origin Policy violations, process model bypasses (breaking Site Isolation), URL spoofing, and the failure to enforce critical security headers like Content-Security-Policy (CSP) or Cross-Origin-Opener-Policy (COOP). This note is based on analysis of both the header and implementation files.
 
 ## 2. Core Concepts
 
@@ -20,7 +20,7 @@ A logical flaw in the `NavigationRequest` state machine can have catastrophic se
 
 *   **State Machine Integrity:**
     *   **Risk:** If the state machine could be manipulated into an invalid transition (e.g., skipping `WILL_PROCESS_RESPONSE`), all security checks that rely on response headers (CSP, COOP, COEP, etc.) would be bypassed.
-    *   **Mitigation:** The `SetState` method performs `DCHECK`s to validate all state transitions, ensuring the navigation proceeds through all required stages.
+    *   **Mitigation:** The `SetState` method performs `DCHECK`s to validate all state transitions against a predefined state machine diagram (`base::StateTransitions`), ensuring the navigation proceeds through all required stages.
 
 *   **URL and Origin Integrity:**
     *   **Risk:** The `NavigationRequest` manages multiple URLs throughout its lifetime (the initial URL, redirect URLs, the final URL). A bug that confuses these, especially using an earlier, trusted URL for a security check after a redirect to a malicious one, could lead to a security bypass.
@@ -28,19 +28,24 @@ A logical flaw in the `NavigationRequest` state machine can have catastrophic se
 
 *   **Throttle Enforcement:**
     *   **Risk:** If a security-critical `NavigationThrottle` returns `CANCEL`, but the `NavigationRequest` fails to abort the navigation, a critical security check would be bypassed.
-    *   **Mitigation:** The `OnNavigationEventProcessed` method is the central callback from the throttle runner. Its logic is responsible for correctly interpreting the throttle result and transitioning the `NavigationRequest` to the `CANCELING` or `WILL_FAIL_REQUEST` state.
+    *   **Mitigation:** The `OnNavigationEventProcessed` method is the central callback from the throttle runner. Its logic is responsible for correctly interpreting the throttle result and transitioning the `NavigationRequest` to the `CANCELING` or `WILL_FAIL_REQUEST` state, ultimately leading to the navigation being aborted via `OnRequestFailedInternal`.
 
 *   **Process Model Enforcement:**
     *   **Risk:** A bug in the logic that determines the destination `SiteInstance` could place cross-site documents in the same process, breaking Site Isolation.
-    *   **Mitigation:** The `NavigationRequest` collaborates with `RenderFrameHostManager`'s `GetSiteInstanceForNavigation` method, which contains the complex logic for process model decisions. The `NavigationRequest` provides all the necessary inputs, such as the `UrlInfo` and the initiator's context. A failure to provide the correct inputs could lead to a wrong decision.
+    *   **Mitigation:** The `NavigationRequest` collaborates with `RenderFrameHostManager`'s `GetFrameHostForNavigation` method, which contains the complex logic for process model decisions. The `NavigationRequest` provides all the necessary inputs, such as the `UrlInfo` and the initiator's context. A failure to provide the correct inputs could lead to a wrong decision.
 
 *   **`ValidateCommitOrigin`:**
     *   **Risk:** Session history can be corrupted or manipulated. If a `NavigationEntry` for `bank.com` was somehow modified to point to `evil.com`, a history navigation could cause the browser to commit `evil.com` in the `bank.com` process.
     *   **Mitigation:** This function performs a final sanity check right before commit. It ensures that the origin being committed is compatible with the origin stored in the `FrameNavigationEntry`. A mismatch is a fatal error, preventing the commit.
         ```cpp
-        // content/browser/renderer_host/navigation_request.h:2436
-        void ValidateCommitOrigin(const url::Origin& origin_to_commit);
+        // content/browser/renderer_host/navigation_request.cc:11880
+        void NavigationRequest::ValidateCommitOrigin(
+            const url::Origin& origin_to_commit) { ... }
         ```
+
+*   **Security Header Parsing and Enforcement**:
+    *   **Risk**: Incorrect parsing or application of headers like CSP, COOP, and COEP could lead to bypassing critical security policies.
+    *   **Mitigation**: `OnResponseStarted` is the main entry point for this. It calls out to dedicated helpers like `ComputeCrossOriginEmbedderPolicy` and `CheckContentSecurityPolicy`. The resulting policies are stored in the `PolicyContainerHost` and sent to the renderer at commit time. The `CoopCoepSanityCheck` function also performs a last-minute verification that COOP+COEP pages are actually in an isolated process.
 
 ## 4. Key Functions
 
