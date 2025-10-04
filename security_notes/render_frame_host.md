@@ -42,4 +42,44 @@ Fenced Frames are a new feature that allows embedding content from a different o
 - **`ExecuteJavaScript()`**: Executes JavaScript in the main world of the frame. This is restricted to chrome:// and devtools:// URLs.
 - **`ExecuteJavaScriptInIsolatedWorld()`**: Executes JavaScript in an isolated world, which provides a separate execution environment from the main world. This is the preferred way to execute scripts from extensions or other browser features.
 
+## Key Security-Relevant APIs from `render_frame_host.h`
+
+This section details specific APIs that are critical for security analysis.
+
+### 1. Permissions, Policies, and Sandboxing
+
+These APIs are the primary enforcement points for the browser's security policies at the frame level.
+- **`GetPermissionsPolicy()`**: Returns the `network::PermissionsPolicy` for the frame, which dictates which features (e.g., camera, geolocation, microphone) are available.
+- **`IsFeatureEnabled(network::mojom::PermissionsPolicyFeature)`**: A direct way to check if a specific powerful feature is enabled by the policy.
+- **`IsSandboxed(network::mojom::WebSandboxFlags)`**: Checks if the frame is sandboxed with specific flags. Sandboxing is a critical defense-in-depth mechanism that restricts the frame's capabilities.
+- **`GetCrossOriginEmbedderPolicy()`**: Retrieves the frame's COEP status, which is essential for enabling cross-origin isolation and protecting against Spectre-like attacks.
+
+### 2. Origin, URL, and Storage Context
+
+These APIs define the security context of the frame, which is fundamental to the Same-Origin Policy.
+- **`GetLastCommittedURL()`**: Returns the URL of the document.
+- **`GetLastCommittedOrigin()`**: Returns the origin of the document. This is the most important value for security decisions.
+- **`GetStorageKey()`**: Returns the `blink::StorageKey` for the document, which is used to partition all storage APIs (e.g., IndexedDB, Cache Storage, Local Storage). This is a key part of preventing cross-site data leakage.
+- **`GetNetworkIsolationKey()`** and **`GetIsolationInfoForSubresources()`**: These determine the key used to isolate network requests for subresources, preventing cross-site tracking and data leakage.
+
+### 3. JavaScript Execution and Bindings
+
+Controlling JavaScript execution and browser-exposed bindings is critical to preventing a compromised renderer from escalating its privileges.
+- **`ExecuteJavaScript()` / `ExecuteJavaScriptInIsolatedWorld()` / `ExecuteJavaScriptForTests()`**: These methods provide different ways to execute script. The security model relies on restricting `ExecuteJavaScript` to privileged URLs and using isolated worlds for less trusted code.
+- **`AllowBindings(BindingsPolicySet)`**: This method explicitly enables or disables specific sets of privileged JavaScript bindings (e.g., `BINDINGS_POLICY_WEB_UI`). Misuse of this API could expose powerful browser functionality to web content.
+- **`GetEnabledBindings()`**: Allows checking which bindings are currently active.
+
+### 4. Remote Interfaces and Factories
+
+These APIs expose Mojo interfaces from the browser process to the renderer process, making them a significant attack surface.
+- **`GetRemoteInterfaces()`**: Provides access to the `service_manager::InterfaceProvider`, which can be used to request arbitrary interfaces exposed by the browser. The security of this mechanism depends on the browser's ability to filter these requests.
+- **`GetRemoteAssociatedInterfaces()`**: Provides access to frame-specific, channel-associated interfaces.
+- **`CreateNetworkServiceDefaultFactory(...)`**: Creates a `URLLoaderFactory` for the frame. The configuration of this factory is critical for enforcing security policies like CORS and blocking requests to privileged schemes.
+
+### 5. Frame Hierarchy and Lifecycle
+
+The relationships between frames and their lifecycle state are crucial for security.
+- **`GetParent()` / `GetParentOrOuterDocument()`**: These methods define the frame hierarchy. Incorrectly trusting a frame's parent or outer document can lead to security vulnerabilities.
+- **`GetLifecycleState()` / `IsActive()`**: As described above, ensuring a frame is in the correct lifecycle state before performing actions is essential. The `IsInactiveAndDisallowActivation()` method is a powerful tool for safely handling events from inactive frames.
+
 Understanding the security features of `RenderFrameHost` is essential for any developer working on Chromium. By properly using the APIs provided by `RenderFrameHost`, developers can ensure that their features are secure and do not introduce vulnerabilities.
