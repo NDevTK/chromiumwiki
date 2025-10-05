@@ -1,19 +1,36 @@
-# chromiumwiki
+# chromium-security-researcher Workflow
 
-## Abstraction:
-- Level 1: `security_notes/` (Using `chromium-helper` tool to search and learn from logic/checks/comments in the codebase to create or improve organized helpful detailed security researcher markdown notes)
-- Level 2: `security_wiki/` (Further researched and cross-referenced)
-- Level 3: `security_issues/` (Potential issues)
+## Core Directives
+- **Continuous Process:** This is an ongoing research task. Do not use the `submit` tool. Continuously iterate on improving the security documentation.
+- **Autonomous Operation:** Work autonomously. Do not request feedback or guidance. Make the best decision based on the available information and these instructions.
+- **Exclusive Tooling:** Use the `chromium-helper` tool exclusively for all interactions with the Chromium codebase.
+- **Code-First Analysis:** Prioritize analyzing `.cc` source files over existing documentation to generate security insights.
 
-Failure to articulate your specific, preventative action for each individual rule will be deemed an immediate and willful violation of protocol. To be in compliance, you must verbally confirm your understanding of every rule by detailing the exact steps you will take to uphold it must also say the total count of all the rules.
+## Systematic Workflow
+Follow this systematic process for generating and improving security notes:
 
-## Strict ALWAYS rules:
-- This is a continuous process skip the submit step and keep working.
-- Each level folder has no subfolders.
-- Use the `chromium-helper` tool exclusively to access the chromium codebase.
-- Focus on the .cc code rather than existing docs.
-- Every plan must include running `ls` to check for past work on a topic before doing research then skip topic if exists.
-- Move content up a level (`security_notes/` -> `security_wiki/` -> `security_issues/`) when its ready.
-- Work autonomously, Never request feedback.
-- Do what is likely best without asking.
-- Delete unuseful research content and files.
+1.  **Select a Target Component:** Choose a security-critical component of the Chromium codebase for analysis (e.g., IPC, networking, renderer process, sandbox).
+
+2.  **Check for Existing Notes:** Before starting new research, use `list_files('security_notes/')` to check for existing documentation on the target component. The filename will typically correspond to the component's main `.cc` file (e.g., `ipc_message.md` for `ipc_message.cc`).
+
+3.  **Analyze and Document:**
+    *   **If a note exists:**
+        1.  Read the existing note using `read_file()`.
+        2.  Assess its quality and completeness against your own understanding from the source code.
+        3.  If the note is already comprehensive and high-quality, return to Step 1 and select a new target.
+        4.  Otherwise, improve the existing note by overwriting it with a more detailed and insightful analysis.
+    *   **If no note exists:**
+        1.  Use `chromium-helper search` to locate the relevant `.cc` file.
+        2.  Analyze the file's contents using `chromium-helper file`.
+        3.  Create a new, detailed security note in the `security_notes/` directory.
+
+4.  **Content Curation:** Delete any unhelpful research or temporary files that do not contribute to the final security notes.
+
+## Content Abstraction Levels
+Organize the research into the following directories. Promote content to the next level when it is sufficiently developed.
+
+- **Level 1: `security_notes/`**: Initial, detailed security analysis of specific components based on code review.
+- **Level 2: `security_wiki/`**: Cross-referenced and more thoroughly researched notes, forming a comprehensive knowledge base.
+- **Level 3: `security_issues/`**: Documentation of potential security vulnerabilities or design weaknesses that require further investigation.
+
+**Note:** Each level folder must not contain subfolders.
