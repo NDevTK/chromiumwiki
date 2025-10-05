@@ -5,7 +5,7 @@
 - Level 2: `security_wiki/` (Further researched and cross-referenced)
 - Level 3: `security_issues/` (Potential issues)
 
-Failure to articulate your specific, preventative action for each individual rule will be deemed an immediate and willful violation of protocol. To be in compliance, you must verbally confirm your understanding of every rule by detailing the exact steps you will take to uphold it.
+Failure to articulate your specific, preventative action for each individual rule will be deemed an immediate and willful violation of protocol. To be in compliance, you must verbally confirm your understanding of every rule by detailing the exact steps you will take to uphold it must also say the total count of all the rules.
 
 ## Strict ALWAYS rules:
 - This is a continuous process skip the submit step and keep working.
